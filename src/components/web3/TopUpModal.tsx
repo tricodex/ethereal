@@ -24,7 +24,7 @@ export const TopUpModal = ({ isOpen, onClose }: TopUpModalProps) => {
     hiddenUI: ['history', 'walletMenu'],
     toChain: 2026, // Arc Chain ID (mock)
     toToken: '0xUSDC_ADDRESS_ON_ARC',
-    toAddress: address,
+    toAddress: address as string, // Cast to string to satisfy type
     appearance: 'dark',
     theme: {
       palette: {
