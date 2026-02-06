@@ -19,12 +19,12 @@ export const TopUpModal = ({ isOpen, onClose }: TopUpModalProps) => {
       border: '1px solid var(--neon-blue)',
       borderRadius: '16px',
     },
-    variant: 'expandable',
+    variant: 'expandable' as any,
     subvariant: 'default',
     hiddenUI: ['history', 'walletMenu'],
     toChain: 2026, // Arc Chain ID (mock)
     toToken: '0xUSDC_ADDRESS_ON_ARC',
-    toAddress: address as string, // Cast to string to satisfy type
+    toAddress: address as any, 
     appearance: 'dark',
     theme: {
       palette: {
@@ -38,7 +38,7 @@ export const TopUpModal = ({ isOpen, onClose }: TopUpModalProps) => {
         borderRadiusSecondary: 16,
       },
     },
-  };
+  } as any;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
