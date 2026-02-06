@@ -1,5 +1,5 @@
 export type GemColor = 1 | 2 | 3 | 4 | 5 | 6 | 7;
-export type GemType = 'simple' | 'shiny' | 'special';
+export type GemType = 'simple' | 'rocket_h' | 'rocket_v' | 'bomb' | 'rainbow';
 
 export interface Gem {
     id: string; // Unique ID for keying
