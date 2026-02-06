@@ -62,7 +62,7 @@ export const TutorialOverlay = ({ levelId }: TutorialProps) => {
                 <img src="/assets/CoreGems/ethereum.png" className="w-10 h-10 animate-pulse" />
                 <div className="text-left">
                     <p className="text-[var(--neon-blue)] font-bold text-sm uppercase">PRO TIP</p>
-                    <p className="text-white text-xs">Match ETH gems to charge your wallet!</p>
+                    <p className="text-white text-xs">Collect ETH gems to complete level objectives!</p>
                 </div>
                 <button 
                     onClick={() => setStep(-1)}
