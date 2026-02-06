@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useGameStore } from "@/store/gameStore";
 import { Gem } from "./Gem";
 import { ROWS, COLS } from "@/lib/game/engine";
+import { AnimatePresence } from "framer-motion";
 
 export const Board = () => {
   const { board, selectedGem, selectGem, initializeGame } = useGameStore();
@@ -35,6 +36,7 @@ export const Board = () => {
             }}
         />
 
+        <AnimatePresence>
         {board.flat().map((gem) => (
           gem ? (
             <Gem
@@ -44,8 +46,14 @@ export const Board = () => {
               isSelected={selectedGem?.x === gem.x && selectedGem?.y === gem.y}
               onClick={() => selectGem({ x: gem.x, y: gem.y })}
             />
-          ) : null
+          ) : (
+            // Spawn particles on empty spots where a "shiny" or high value gem might have been
+            // Logic for this is complex in React without an event bus, so we'll just placeholder it 
+            // for the verify step or add it to the Gem component's Exit animation
+            null
+          )
         ))}
+        </AnimatePresence>
       </div>
     </div>
   );
