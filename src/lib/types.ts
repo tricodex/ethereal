@@ -21,3 +21,13 @@ export interface MatchResult {
     matches: Gem[];
     score: number;
 }
+
+export interface Level {
+    id: number;
+    targetScore: number;
+    moves: number;
+    objectives?: {
+        type: 'collect_eth';
+        count: number;
+    }[];
+}
