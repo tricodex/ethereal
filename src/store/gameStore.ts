@@ -16,7 +16,6 @@ interface GameState {
 
     // Level State
     currentLevelId: number;
-    levelConfig: Level | null;
     collectedEth: number;
     comboCount: number;
     floatingTexts: FloatingText[];
@@ -43,6 +42,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     levelConfig: DEFAULT_LEVEL,
     collectedEth: 0,
     comboCount: 0,
+    floatingTexts: [],
 
     addFloatingText: (item) => {
         const id = Math.random().toString(36).substr(2, 9);
@@ -140,6 +140,15 @@ export const useGameStore = create<GameState>((set, get) => ({
 
             // Initial removal with transformations
             currentBoard = removeMatches(currentBoard, matchResult.matches, matchResult.transformations);
+
+            // Floating Text for Initial Match
+            const centerGem = matchResult.matches[Math.floor(matchResult.matches.length / 2)];
+            if (centerGem) {
+                const xPos = centerGem.x * 60 + 30; // approx center of tile
+                const yPos = centerGem.y * 60;
+                get().addFloatingText({ x: xPos, y: yPos, text: `+${matchResult.score}`, color: '#ffff00' });
+            }
+
             set({ board: currentBoard, comboCount: 1 });
             await new Promise(r => setTimeout(r, 400)); // Initial match hesitation
 
@@ -165,10 +174,20 @@ export const useGameStore = create<GameState>((set, get) => ({
 
                 // Bonus score for combo
                 const comboBonus = comboCount * 50;
+                const turnScore = cascadeMatches.score + comboBonus;
+
+                // Floating Text for Cascade
+                const cascadeCenter = cascadeMatches.matches[Math.floor(cascadeMatches.matches.length / 2)];
+                if (cascadeCenter) {
+                    const xPos = cascadeCenter.x * 60 + 30;
+                    const yPos = cascadeCenter.y * 60;
+                    get().addFloatingText({ x: xPos, y: yPos, text: `+${turnScore}`, color: comboCount > 2 ? '#ff00ff' : '#00ff00' });
+                }
 
                 set(state => ({
                     board: currentBoard,
-                    score: state.score + cascadeMatches.score + comboBonus
+                    score: state.score + turnScore,
+                    comboCount: comboCount
                 }));
 
                 // Speed up combos: "fast but one by one"
