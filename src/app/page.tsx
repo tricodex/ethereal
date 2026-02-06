@@ -41,9 +41,6 @@ export default function Home() {
                 <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-pink)] drop-shadow-[0_0_10px_rgba(255,0,255,0.5)]">
                 CRUSH ETH
                 </h1>
-                <p className="text-[var(--neon-green)] font-mono text-sm md:text-lg tracking-widest uppercase">
-                Compete • Match-3 • Win USDC
-                </p>
             </div>
 
             {!isPlaying ? (
