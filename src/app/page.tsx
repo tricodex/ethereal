@@ -9,6 +9,8 @@ import { ArrowLeft } from "lucide-react";
 
 import { Sidebar } from "@/components/game/Sidebar";
 
+import { LevelCompleteModal } from "@/components/game/LevelCompleteModal";
+
 export default function Home() {
   const { score, moves, isGameOver, levelConfig, currentLevelId, initializeGame, collectedEth } = useGameStore();
   const [isPlaying, setIsPlaying] = useState(false);
@@ -26,43 +28,10 @@ export default function Home() {
   return (
     <main className="min-h-screen pt-20 pb-10 px-4 md:px-8 max-w-7xl mx-auto">
       {/* Game Over / Level Complete Overlay */}
-      {isGameOver && isPlaying && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-500 fixed">
-              <div className="flex flex-col items-center gap-6 p-10 bg-[#0a0a10] border-2 border-[var(--neon-pink)] rounded-2xl shadow-[0_0_50px_rgba(255,0,255,0.4)] max-w-sm text-center">
-                  <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter">
-                      {score >= (levelConfig?.targetScore || 0) ? "LEVEL COMPLETE!" : "GAME OVER"}
-                  </h2>
-                  
-                  <div className="space-y-2">
-                      <p className="text-gray-400 text-sm font-mono uppercase">Score</p>
-                      <p className="text-6xl font-bold text-[var(--neon-yellow)] drop-shadow-[0_0_15px_rgba(252,238,10,0.5)]">
-                          {score}
-                      </p>
-                  </div>
-                  
-                  {levelConfig?.objectives?.map((obj, i) => (
-                      <div key={i} className="text-sm text-[var(--neon-blue)]">
-                          Collected ETH: {collectedEth} / {obj.count}
-                      </div>
-                  ))}
-
-                  <div className="flex gap-4 mt-4">
-                    <button 
-                        onClick={handleBackToLevels}
-                        className="px-6 py-3 bg-gray-800 text-white font-bold uppercase hover:bg-gray-700 transition-colors rounded-full"
-                    >
-                        Levels
-                    </button>
-                    <button 
-                        onClick={() => initializeGame()}
-                        className="px-8 py-3 bg-white text-black font-bold uppercase tracking-widest hover:bg-[var(--neon-pink)] hover:text-white transition-colors rounded-full"
-                    >
-                        Replay
-                    </button>
-                  </div>
-              </div>
-          </div>
-      )}
+      <LevelCompleteModal 
+        onReplay={() => initializeGame()} 
+        onBackToLevels={handleBackToLevels} 
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-8 items-start">
         {/* Main Game Area */}

@@ -27,7 +27,6 @@ export const Board = () => {
       }}
     >
       <div className="absolute inset-0 overflow-hidden rounded-xl">
-        <Particles />
         <FloatingScore texts={floatingTexts} />
 
         {/* Grid Background */}
