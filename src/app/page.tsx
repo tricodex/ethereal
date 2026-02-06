@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Board } from "@/components/game/Board";
 import { useGameStore } from "@/store/gameStore";
 import { LevelSelector } from "@/components/game/LevelSelector";
+import { TutorialOverlay } from "@/components/game/TutorialOverlay";
 import { ArrowLeft } from "lucide-react";
 
 export default function Home() {
@@ -104,6 +105,8 @@ export default function Home() {
                     ))}
                 </div>
             )}
+            
+            <TutorialOverlay levelId={currentLevelId} />
           </div>
       )}
     </main>
