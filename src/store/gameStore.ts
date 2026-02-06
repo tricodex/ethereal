@@ -9,10 +9,14 @@ interface GameState {
     moves: number;
     isProcessing: boolean;
 
+    isGameOver: boolean;
+
     // Actions
     initializeGame: () => void;
     selectGem: (pos: Position) => Promise<void>;
 }
+
+const MAX_MOVES = 30;
 
 export const useGameStore = create<GameState>((set, get) => ({
     board: [],
@@ -20,14 +24,15 @@ export const useGameStore = create<GameState>((set, get) => ({
     score: 0,
     moves: 0,
     isProcessing: false,
+    isGameOver: false,
 
     initializeGame: () => {
-        set({ board: initializeBoard(), score: 0, moves: 0, isProcessing: false });
+        set({ board: initializeBoard(), score: 0, moves: 0, isProcessing: false, isGameOver: false });
     },
 
     selectGem: async (pos: Position) => {
-        const { board, selectedGem, isProcessing } = get();
-        if (isProcessing) return;
+        const { board, selectedGem, isProcessing, isGameOver, moves } = get();
+        if (isProcessing || isGameOver) return;
 
         if (!selectedGem) {
             set({ selectedGem: pos });
@@ -60,7 +65,13 @@ export const useGameStore = create<GameState>((set, get) => ({
 
         if (matchResult.matches.length > 0) {
             // Valid swap with matches
-            set(state => ({ score: state.score + matchResult.score, moves: state.moves + 1 }));
+            const newMoves = moves + 1;
+            set(state => ({ score: state.score + matchResult.score, moves: newMoves }));
+
+            if (newMoves >= MAX_MOVES) {
+                set({ isGameOver: true });
+            }
+
             let currentBoard = newBoard;
 
             // Cascade loop
