@@ -9,14 +9,18 @@ export const LEVELS: Level[] = [
     {
         id: 2,
         targetScore: 2500,
-        moves: 20,
-        objectives: [{ type: 'collect_eth', count: 5 }]
+        moves: 25,
+        objectives: [
+            { type: 'collect_eth', count: 12 }
+        ]
     },
     {
         id: 3,
         targetScore: 5000,
-        moves: 25,
-        objectives: [{ type: 'collect_eth', count: 10 }]
+        moves: 30,
+        objectives: [
+            { type: 'collect_eth', count: 20 }
+        ]
     },
     {
         id: 4,
