@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { Board, Position, Level } from '@/lib/types';
 import { initializeBoard, swapGems, findMatches, removeMatches, applyGravity } from '@/lib/game/engine';
 import { LEVELS } from '@/lib/game/levels';
-
 import { FloatingText } from '@/components/game/FloatingScore';
 
 interface GameState {
@@ -12,10 +11,10 @@ interface GameState {
     moves: number;
     isProcessing: boolean;
     isGameOver: boolean;
-    floatingTexts: FloatingText[];
 
     // Level State
     currentLevelId: number;
+    levelConfig: Level | null;
     collectedEth: number;
     comboCount: number;
     floatingTexts: FloatingText[];
@@ -36,7 +35,6 @@ export const useGameStore = create<GameState>((set, get) => ({
     moves: 0,
     isProcessing: false,
     isGameOver: false,
-    floatingTexts: [],
 
     currentLevelId: 1,
     levelConfig: DEFAULT_LEVEL,
@@ -49,7 +47,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         set(state => ({ floatingTexts: [...state.floatingTexts, { ...item, id }] }));
         setTimeout(() => {
             set(state => ({ floatingTexts: state.floatingTexts.filter(t => t.id !== id) }));
-        }, 800);
+        }, 1200);
     },
 
     initializeGame: (levelId?: number) => {
@@ -65,7 +63,8 @@ export const useGameStore = create<GameState>((set, get) => ({
             currentLevelId: targetLevelId,
             levelConfig: config,
             collectedEth: 0,
-            comboCount: 0
+            comboCount: 0,
+            floatingTexts: []
         });
     },
 
@@ -193,6 +192,9 @@ export const useGameStore = create<GameState>((set, get) => ({
                 // Speed up combos: "fast but one by one"
                 await new Promise(r => setTimeout(r, Math.max(150, 400 - (comboCount * 50))));
             }
+
+            // Turn ended
+            setTimeout(() => set({ comboCount: 0 }), 1000);
         } else {
             // Invalid swap, revert
             const revertedBoard = swapGems(newBoard, pos, selectedGem);
