@@ -67,8 +67,8 @@ export default function Home() {
         <h1 className="text-6xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-pink)] drop-shadow-[0_0_10px_rgba(255,0,255,0.5)]">
           CRUSH ETH
         </h1>
-        <p className="text-[var(--neon-green)] font-mono tracking-widest text-sm">
-          MATCH-3 CRYPTO BATTLE
+        <p className="text-[var(--neon-green)] font-mono text-lg tracking-widest uppercase">
+          Compete • Match-3 • Win USDC
         </p>
       </div>
 
@@ -109,6 +109,10 @@ export default function Home() {
             <TutorialOverlay levelId={currentLevelId} />
           </div>
       )}
+      
+      <div className="mt-4 text-xs text-gray-500 font-mono">
+        ALPHA VERSION v0.1 • TESTNET ONLY • NO REAL FUNDS
+      </div>
     </main>
   );
 }
