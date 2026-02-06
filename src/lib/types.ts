@@ -19,6 +19,7 @@ export interface Position {
 
 export interface MatchResult {
     matches: Gem[];
+    transformations?: { gem: Gem, toType: GemType }[];
     score: number;
 }
 
