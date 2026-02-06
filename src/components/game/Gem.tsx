@@ -17,7 +17,6 @@ export const Gem = ({ gem, isSelected, onClick, size = 50 }: GemProps) => {
     ? "/assets/CoreGems/ethereum.png"
     : `/assets/CoreGems/simple/${gem.color}.png`;
 
-  return (
   /* 
     Logic for special visuals:
     Rocket H: Arrow pointing Left/Right
