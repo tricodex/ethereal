@@ -37,16 +37,14 @@ export default function Home() {
         {/* Main Game Area */}
         {/* Main Game Area */}
         <div className="flex flex-col items-center gap-4 lg:gap-8">
-            {!isPlaying && (
-                <div className="text-center space-y-2 relative z-10 animate-in fade-in slide-in-from-top-4 duration-700">
-                    <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-pink)] drop-shadow-[0_0_10px_rgba(255,0,255,0.5)]">
-                    CRUSH ETH
-                    </h1>
-                    <p className="text-[var(--neon-green)] font-mono text-sm md:text-lg tracking-widest uppercase">
-                    Compete • Match-3 • Win USDC
-                    </p>
-                </div>
-            )}
+            <div className="text-center space-y-2 relative z-10 animate-in fade-in slide-in-from-top-4 duration-700">
+                <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-pink)] drop-shadow-[0_0_10px_rgba(255,0,255,0.5)]">
+                CRUSH ETH
+                </h1>
+                <p className="text-[var(--neon-green)] font-mono text-sm md:text-lg tracking-widest uppercase">
+                Compete • Match-3 • Win USDC
+                </p>
+            </div>
 
             {!isPlaying ? (
                 <LevelSelector currentLevelId={currentLevelId} onSelectLevel={handleLevelSelect} />
