@@ -15,6 +15,7 @@ interface GameState {
     currentLevelId: number;
     levelConfig: Level | null;
     collectedEth: number;
+    comboCount: number;
 
     // Actions
     initializeGame: (levelId?: number) => void;
@@ -35,6 +36,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     currentLevelId: 1,
     levelConfig: DEFAULT_LEVEL,
     collectedEth: 0,
+    comboCount: 0,
 
     initializeGame: (levelId?: number) => {
         const targetLevelId = levelId || get().currentLevelId;
@@ -48,7 +50,8 @@ export const useGameStore = create<GameState>((set, get) => ({
             isGameOver: false,
             currentLevelId: targetLevelId,
             levelConfig: config,
-            collectedEth: 0
+            collectedEth: 0,
+            comboCount: 0
         });
     },
 
