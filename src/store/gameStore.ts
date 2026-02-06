@@ -3,6 +3,8 @@ import { Board, Position, Level } from '@/lib/types';
 import { initializeBoard, swapGems, findMatches, removeMatches, applyGravity } from '@/lib/game/engine';
 import { LEVELS } from '@/lib/game/levels';
 
+import { FloatingText } from '@/components/game/FloatingScore';
+
 interface GameState {
     board: Board;
     selectedGem: Position | null;
@@ -10,17 +12,20 @@ interface GameState {
     moves: number;
     isProcessing: boolean;
     isGameOver: boolean;
+    floatingTexts: FloatingText[];
 
     // Level State
     currentLevelId: number;
     levelConfig: Level | null;
     collectedEth: number;
     comboCount: number;
+    floatingTexts: FloatingText[];
 
     // Actions
     initializeGame: (levelId?: number) => void;
     selectGem: (pos: Position) => Promise<void>;
     nextLevel: () => void;
+    addFloatingText: (text: Omit<FloatingText, 'id'>) => void;
 }
 
 const DEFAULT_LEVEL = LEVELS[0];
@@ -32,11 +37,20 @@ export const useGameStore = create<GameState>((set, get) => ({
     moves: 0,
     isProcessing: false,
     isGameOver: false,
+    floatingTexts: [],
 
     currentLevelId: 1,
     levelConfig: DEFAULT_LEVEL,
     collectedEth: 0,
     comboCount: 0,
+
+    addFloatingText: (item) => {
+        const id = Math.random().toString(36).substr(2, 9);
+        set(state => ({ floatingTexts: [...state.floatingTexts, { ...item, id }] }));
+        setTimeout(() => {
+            set(state => ({ floatingTexts: state.floatingTexts.filter(t => t.id !== id) }));
+        }, 800);
+    },
 
     initializeGame: (levelId?: number) => {
         const targetLevelId = levelId || get().currentLevelId;
