@@ -13,26 +13,28 @@ export const Sidebar = () => {
     : 0;
 
   return (
-    <aside className="hidden lg:flex flex-col gap-6 w-80 h-[calc(100vh-100px)] sticky top-24 p-6 bg-black/40 backdrop-blur-xl border-r border-white/5 rounded-r-3xl">
+    <aside className="hidden lg:flex flex-col gap-4 w-full max-h-[calc(100vh-120px)] p-5 bg-black/40 backdrop-blur-xl border-r border-white/5 rounded-3xl border border-white/10 shadow-2xl overflow-y-auto custom-scrollbar">
       {/* Profile Section */}
-      <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
-        <p className="text-xs text-gray-500 font-mono mb-2 uppercase tracking-widest">Player Profile</p>
-        <EnsProfile />
+      <div className="p-3 bg-white/5 rounded-xl border border-white/10">
+        <p className="text-[10px] text-gray-500 font-mono mb-1 uppercase tracking-widest">Player Profile</p>
+        <div className="scale-90 origin-top-left">
+            <EnsProfile />
+        </div>
       </div>
 
       {/* Level Progress */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
-            <h3 className="text-[var(--neon-yellow)] font-bold text-xl uppercase italic">Level {currentLevelId}</h3>
-            <span className="text-xs font-mono text-gray-400">Target: {levelConfig?.targetScore}</span>
+            <h3 className="text-[var(--neon-yellow)] font-bold text-lg uppercase italic">Level {currentLevelId}</h3>
+            <span className="text-[10px] font-mono text-gray-400">Target: {levelConfig?.targetScore}</span>
         </div>
         
-        <div className="space-y-2">
-            <div className="flex justify-between text-xs text-white/70">
+        <div className="space-y-1">
+            <div className="flex justify-between text-[10px] text-white/70">
                 <span>Objective: Collect ETH</span>
                 <span>{collectedEth} / {levelConfig?.objectives?.[0]?.count || 0}</span>
             </div>
-            <div className="h-4 w-full bg-black/50 rounded-full overflow-hidden border border-white/10">
+            <div className="h-3 w-full bg-black/50 rounded-full overflow-hidden border border-white/10">
                 <div 
                     className="h-full bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-green)] transition-all duration-500"
                     style={{ width: `${Math.min(100, progress)}%` }}
