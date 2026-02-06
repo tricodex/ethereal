@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import { Board, Position } from '@/lib/types';
+import { Board, Position, Level } from '@/lib/types';
 import { initializeBoard, swapGems, findMatches, removeMatches, applyGravity } from '@/lib/game/engine';
+import { LEVELS } from '@/lib/game/levels';
 
 interface GameState {
     board: Board;
@@ -8,15 +9,20 @@ interface GameState {
     score: number;
     moves: number;
     isProcessing: boolean;
-
     isGameOver: boolean;
 
+    // Level State
+    currentLevelId: number;
+    levelConfig: Level | null;
+    collectedEth: number;
+
     // Actions
-    initializeGame: () => void;
+    initializeGame: (levelId?: number) => void;
     selectGem: (pos: Position) => Promise<void>;
+    nextLevel: () => void;
 }
 
-const MAX_MOVES = 30;
+const DEFAULT_LEVEL = LEVELS[0];
 
 export const useGameStore = create<GameState>((set, get) => ({
     board: [],
@@ -26,13 +32,37 @@ export const useGameStore = create<GameState>((set, get) => ({
     isProcessing: false,
     isGameOver: false,
 
-    initializeGame: () => {
-        set({ board: initializeBoard(), score: 0, moves: 0, isProcessing: false, isGameOver: false });
+    currentLevelId: 1,
+    levelConfig: DEFAULT_LEVEL,
+    collectedEth: 0,
+
+    initializeGame: (levelId?: number) => {
+        const targetLevelId = levelId || get().currentLevelId;
+        const config = LEVELS.find(l => l.id === targetLevelId) || DEFAULT_LEVEL;
+
+        set({
+            board: initializeBoard(),
+            score: 0,
+            moves: 0,
+            isProcessing: false,
+            isGameOver: false,
+            currentLevelId: targetLevelId,
+            levelConfig: config,
+            collectedEth: 0
+        });
+    },
+
+    nextLevel: () => {
+        const { currentLevelId } = get();
+        const nextId = currentLevelId + 1;
+        if (LEVELS.find(l => l.id === nextId)) {
+            get().initializeGame(nextId);
+        }
     },
 
     selectGem: async (pos: Position) => {
-        const { board, selectedGem, isProcessing, isGameOver, moves } = get();
-        if (isProcessing || isGameOver) return;
+        const { board, selectedGem, isProcessing, isGameOver, moves, levelConfig, collectedEth } = get();
+        if (isProcessing || isGameOver || !levelConfig) return;
 
         if (!selectedGem) {
             set({ selectedGem: pos });
@@ -66,9 +96,25 @@ export const useGameStore = create<GameState>((set, get) => ({
         if (matchResult.matches.length > 0) {
             // Valid swap with matches
             const newMoves = moves + 1;
-            set(state => ({ score: state.score + matchResult.score, moves: newMoves }));
 
-            if (newMoves >= MAX_MOVES) {
+            // Calculate ETH gems collected
+            const ethCollectedInTurn = matchResult.matches.filter(g => g.color === 7).length;
+            const totalEth = collectedEth + ethCollectedInTurn;
+
+            set(state => ({
+                score: state.score + matchResult.score,
+                moves: newMoves,
+                collectedEth: state.collectedEth + ethCollectedInTurn
+            }));
+
+            // Check Win Condition (Target Score + Objectives)
+            const objectiveMet = !levelConfig.objectives?.some(obj =>
+                obj.type === 'collect_eth' && totalEth < obj.count
+            );
+
+            if (objectiveMet && (get().score >= levelConfig.targetScore)) {
+                set({ isGameOver: true });
+            } else if (newMoves >= levelConfig.moves) {
                 set({ isGameOver: true });
             }
 
