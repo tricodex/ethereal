@@ -119,24 +119,43 @@ export const useGameStore = create<GameState>((set, get) => ({
             }
 
             let currentBoard = newBoard;
+            let comboCount = 1;
+
+            // Initial removal with transformations
+            currentBoard = removeMatches(currentBoard, matchResult.matches, matchResult.transformations);
+            set({ board: currentBoard });
+            await new Promise(r => setTimeout(r, 400)); // Initial match hesitation
 
             // Cascade loop
             while (true) {
-                const matches = findMatches(currentBoard);
-                if (matches.matches.length === 0) break;
-
-                // Remove matches
-                currentBoard = removeMatches(currentBoard, matches.matches);
-                set({ board: currentBoard });
-                await new Promise(r => setTimeout(r, 300));
-
                 // Apply gravity
                 currentBoard = applyGravity(currentBoard);
                 set({ board: currentBoard });
-                await new Promise(r => setTimeout(r, 300));
+                await new Promise(r => setTimeout(r, 300)); // Drop speed
 
-                // Add cascade score
-                set(state => ({ score: state.score + matches.score }));
+                const cascadeMatches = findMatches(currentBoard);
+                if (cascadeMatches.matches.length === 0) break;
+
+                comboCount++;
+
+                // Remove cascade matches (faster delay for combos)
+                // Pass transformations if any (recursive special generation!)
+                currentBoard = removeMatches(
+                    currentBoard,
+                    cascadeMatches.matches,
+                    cascadeMatches.transformations
+                );
+
+                // Bonus score for combo
+                const comboBonus = comboCount * 50;
+
+                set(state => ({
+                    board: currentBoard,
+                    score: state.score + cascadeMatches.score + comboBonus
+                }));
+
+                // Speed up combos: "fast but one by one"
+                await new Promise(r => setTimeout(r, Math.max(150, 400 - (comboCount * 50))));
             }
         } else {
             // Invalid swap, revert
