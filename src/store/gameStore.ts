@@ -126,7 +126,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
             // Initial removal with transformations
             currentBoard = removeMatches(currentBoard, matchResult.matches, matchResult.transformations);
-            set({ board: currentBoard });
+            set({ board: currentBoard, comboCount: 1 });
             await new Promise(r => setTimeout(r, 400)); // Initial match hesitation
 
             // Cascade loop
