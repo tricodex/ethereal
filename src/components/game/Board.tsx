@@ -4,55 +4,80 @@ import { useEffect, useState } from "react";
 import { useGameStore } from "@/store/gameStore";
 import { Gem } from "./Gem";
 import { ROWS, COLS } from "@/lib/game/engine";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { Particles } from "./Particles";
+import { FloatingScore } from "./FloatingScore";
+
+const GEM_SIZE = 60;
 
 export const Board = () => {
-  const { board, selectedGem, selectGem, initializeGame } = useGameStore();
-  const [mounted, setMounted] = useState(false);
-  const GEM_SIZE = 60; // Configurable size
+  const { board, selectedGem, selectGem, initializeGame, comboCount, floatingTexts } = useGameStore();
 
   useEffect(() => {
     initializeGame();
-    setMounted(true);
-  }, [initializeGame]);
-
-  if (!mounted) return null;
+  }, []);
 
   return (
-    <div className="relative p-4 rounded-xl bg-[rgba(10,10,20,0.8)] border-2 border-[var(--neon-blue)] shadow-[0_0_20px_rgba(0,243,255,0.3)] backdrop-blur-md">
-      <div 
-        className="relative bg-[rgba(0,0,0,0.5)] rounded-lg overflow-hidden"
-        style={{
-          width: COLS * GEM_SIZE,
-          height: ROWS * GEM_SIZE,
-        }}
-      >
-        {/* Background Grid Pattern */}
+    <div 
+      className="relative bg-black/40 backdrop-blur-xl rounded-xl border-2 border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]"
+      style={{
+        width: COLS * GEM_SIZE + 32,
+        height: ROWS * GEM_SIZE + 32,
+        padding: 16
+      }}
+    >
+      <div className="relative w-full h-full">
+        {/* Grid Background */}
         <div 
-            className="absolute inset-0 opacity-20 pointer-events-none"
-            style={{
-                backgroundImage: `linear-gradient(var(--neon-blue) 1px, transparent 1px), linear-gradient(90deg, var(--neon-blue) 1px, transparent 1px)`,
-                backgroundSize: `${GEM_SIZE}px ${GEM_SIZE}px`
+            className="absolute inset-0 grid" 
+            style={{ 
+                gridTemplateColumns: `repeat(${COLS}, 1fr)`,
+                gridTemplateRows: `repeat(${ROWS}, 1fr)`,
             }}
-        />
+        >
+            {Array.from({ length: ROWS * COLS }).map((_, i) => (
+                <div key={i} className="border border-white/5 bg-white/5" />
+            ))}
+        </div>
 
         <AnimatePresence>
-        {board.flat().map((gem) => (
-          gem ? (
-            <Gem
-              key={gem.id}
-              gem={gem}
-              size={GEM_SIZE}
-              isSelected={selectedGem?.x === gem.x && selectedGem?.y === gem.y}
-              onClick={() => selectGem({ x: gem.x, y: gem.y })}
-            />
-          ) : (
-            // Spawn particles on empty spots where a "shiny" or high value gem might have been
-            // Logic for this is complex in React without an event bus, so we'll just placeholder it 
-            // for the verify step or add it to the Gem component's Exit animation
-            null
-          )
-        ))}
+        {board.map((row, y) => 
+            row.map((gem, x) => (
+                gem ? (
+                    <Gem
+                    key={gem.id}
+                    gem={gem}
+                    size={GEM_SIZE}
+                    isSelected={selectedGem?.x === gem.x && selectedGem?.y === gem.y}
+                    onClick={() => selectGem({ x: gem.x, y: gem.y })}
+                    />
+                ) : (
+                    <Particles key={`p-${x}-${y}`} position={{x, y}} /> 
+                )
+            ))
+        )}
+        </AnimatePresence>
+        
+        {/* Combo Overlay */}
+        <AnimatePresence>
+            {comboCount > 1 && (
+                <motion.div
+                    initial={{ scale: 0.5, opacity: 0, y: 20 }}
+                    animate={{ scale: 1.5, opacity: 1, y: 0 }}
+                    exit={{ scale: 2, opacity: 0 }}
+                    key={comboCount}
+                    className="absolute inset-0 flex items-center justify-center pointer-events-none z-50"
+                >
+                    <div className="flex flex-col items-center">
+                        <span className="text-6xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-[var(--neon-yellow)] to-[var(--neon-pink)] drop-shadow-[0_0_20px_rgba(255,0,255,0.8)] stroke-white stroke-2">
+                            {comboCount}x
+                        </span>
+                        <span className="text-2xl font-bold text-white uppercase tracking-widest drop-shadow-md">
+                            COMBO!
+                        </span>
+                    </div>
+                </motion.div>
+            )}
         </AnimatePresence>
       </div>
     </div>
