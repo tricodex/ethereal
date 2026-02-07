@@ -18,8 +18,8 @@ export const LevelSelector = ({ currentLevelId, onSelectLevel }: LevelSelectorPr
   
   // Group levels
   const worlds = [
-    { id: 1, name: "ETHER PLAINS", desc: "The journey begins.", levels: LEVELS.filter(l => l.worldId === 1) },
-    { id: 2, name: "FROZEN STAKING", desc: "Break the ice to release your assets.", levels: LEVELS.filter(l => l.worldId === 2) }
+    { id: 1, name: "ETHERIA GENESIS", desc: "Where it all began. Collect ETH to survive.", levels: LEVELS.filter(l => l.worldId === 1) },
+    { id: 2, name: "THE CRYO-VAULT", desc: "Funds are frozen. Smash the ice to withdraw.", levels: LEVELS.filter(l => l.worldId === 2) }
   ];
 
   const currentWorld = worlds.find(w => w.id === activeWorld) || worlds[0];
