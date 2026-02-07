@@ -1,102 +1,59 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAccount, useWriteContract } from "wagmi";
-import { parseUnits } from "viem";
-import { Loader2, Swords } from "lucide-react";
-import clsx from "clsx";
-
-const STAKES = [0.5, 1, 2, 5];
+import { motion } from "framer-motion";
+import { Swords, Users, Wallet } from "lucide-react";
 
 export default function DuelPage() {
-  const [selectedStake, setSelectedStake] = useState<number | null>(null);
-  const [isLocking, setIsLocking] = useState(false);
-  const router = useRouter();
-  const { isConnected } = useAccount();
-  
-  // TODO: Use real contract ABI
-  // const { writeContractAsync } = useWriteContract();
-
-  const handleStartDuel = async () => {
-    if (!selectedStake || !isConnected) return;
-    setIsLocking(true);
-
-    try {
-        // Mock Contract Interaction
-        // await writeContractAsync({ ... })
-        
-        await new Promise(r => setTimeout(r, 2000)); // Simulate tx
-        
-        // Redirect to match (using random match ID)
-        const matchId = Math.random().toString(36).substring(7);
-        router.push(`/play?mode=duel&matchId=${matchId}&stake=${selectedStake}`);
-        
-    } catch (e) {
-        console.error(e);
-        setIsLocking(false);
-    }
-  };
-
   return (
-    <main className="flex flex-col items-center justify-center min-h-[80vh] gap-10 p-4">
-      <div className="text-center space-y-4">
-        <Swords size={64} className="mx-auto text-[var(--neon-pink)] animate-pulse" />
-        <h1 className="text-5xl font-black tracking-tighter text-white">
-          COMPETITIVE <span className="text-[var(--neon-pink)]">DUEL</span>
+    <div className="min-h-screen pt-24 pb-10 px-4 flex flex-col items-center">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="text-center mb-12"
+      >
+        <h1 className="text-5xl md:text-7xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-[var(--neon-pink)] to-[var(--neon-blue)] drop-shadow-[0_0_15px_rgba(255,0,255,0.5)]">
+            PVP DUELS
         </h1>
-        <p className="text-gray-400 max-w-md mx-auto">
-          Wager USDC against other players. Winner takes the pot.
-          Fair play enforced by Arc.
+        <p className="text-[var(--neon-blue)] font-mono tracking-widest uppercase mt-4">
+            Wager USDC • Crush Opponents • Take All
         </p>
+      </motion.div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl">
+        {[
+            { title: "Real-Time Battle", icon: Swords, desc: "Head-to-head match-3 action against real players." },
+            { title: "Wager & Win", icon: Wallet, desc: "Put your USDC on the line. Winner takes the pot." },
+            { title: "Global Ranking", icon: Users, desc: "Climb the ELO ladder and become the Duel Master." }
+        ].map((item, i) => (
+            <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.2 }}
+                className="bg-black/40 backdrop-blur-xl p-8 rounded-3xl border border-white/10 text-center hover:border-[var(--neon-pink)]/50 transition-colors group"
+            >
+                <div className="w-16 h-16 mx-auto bg-[var(--neon-pink)]/10 rounded-full flex items-center justify-center text-[var(--neon-pink)] mb-6 group-hover:scale-110 transition-transform">
+                    <item.icon size={32} />
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-2">{item.title}</h3>
+                <p className="text-gray-400 font-mono text-sm">{item.desc}</p>
+            </motion.div>
+        ))}
       </div>
 
-      {!isConnected ? (
-        <div className="p-8 border border-white/10 rounded-2xl bg-white/5 backdrop-blur">
-          <p className="text-[var(--neon-blue)] font-mono mb-4 text-center">CONNECT WALLET TO PLAY</p>
-        </div>
-      ) : (
-        <div className="w-full max-w-md space-y-8">
-            <div className="grid grid-cols-2 gap-4">
-                {STAKES.map((amount) => (
-                    <button
-                        key={amount}
-                        onClick={() => setSelectedStake(amount)}
-                        className={clsx(
-                            "relative p-6 rounded-xl border-2 transition-all group overflow-hidden",
-                            selectedStake === amount 
-                                ? "border-[var(--neon-green)] bg-[var(--neon-green)]/10 shadow-[0_0_20px_var(--neon-green)]" 
-                                : "border-white/10 hover:border-white/30 bg-white/5"
-                        )}
-                    >
-                        <span className="text-3xl font-black text-white group-hover:scale-110 block transition-transform">
-                            ${amount}
-                        </span>
-                        <span className="text-xs text-gray-400 font-mono">USDC</span>
-                    </button>
-                ))}
-            </div>
-
-            <button
-                disabled={!selectedStake || isLocking}
-                onClick={handleStartDuel}
-                className={clsx(
-                    "w-full py-4 rounded-xl font-bold text-xl uppercase tracking-widest transition-all",
-                    !selectedStake 
-                        ? "bg-gray-800 text-gray-500 cursor-not-allowed"
-                        : "bg-[var(--neon-pink)] text-white shadow-[0_0_30px_var(--neon-pink)] hover:scale-[1.02] active:scale-95"
-                )}
-            >
-                {isLocking ? (
-                    <span className="flex items-center justify-center gap-2">
-                        <Loader2 className="animate-spin" /> LOCKING FUNDS...
-                    </span>
-                ) : (
-                    "FIND MATCH"
-                )}
-            </button>
-        </div>
-      )}
-    </main>
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.8 }}
+        className="mt-16 p-6 rounded-2xl bg-[var(--neon-blue)]/10 border border-[var(--neon-blue)] text-center max-w-lg animate-pulse"
+      >
+        <p className="text-[var(--neon-blue)] font-mono font-bold">
+            DUEL ARENA UNDER CONSTRUCTION
+        </p>
+        <p className="text-gray-400 text-sm mt-2">
+            The developers are currently forging the multiplayer servers. Check back soon.
+        </p>
+      </motion.div>
+    </div>
   );
 }

@@ -1,7 +1,12 @@
 "use client";
 
-import { LiFiWidget, WidgetConfig } from '@lifi/widget';
+import dynamic from 'next/dynamic';
 import { useAccount } from 'wagmi';
+
+// const LiFiWidget = dynamic(
+//   () => import('@lifi/widget').then((module) => module.LiFiWidget),
+//   { ssr: false }
+// );
 
 interface TopUpModalProps {
   isOpen: boolean;
@@ -13,7 +18,7 @@ export const TopUpModal = ({ isOpen, onClose }: TopUpModalProps) => {
 
   if (!isOpen) return null;
 
-  const widgetConfig: WidgetConfig = {
+  const widgetConfig: any = {
     integrator: 'CrushETH',
     containerStyle: {
       border: '1px solid var(--neon-blue)',
@@ -49,8 +54,10 @@ export const TopUpModal = ({ isOpen, onClose }: TopUpModalProps) => {
         >
           ✕
         </button>
-        <div className="overflow-hidden rounded-2xl">
-            <LiFiWidget integrator="CrushETH" config={widgetConfig} />
+        <div className="overflow-hidden rounded-2xl p-6 text-center text-gray-400">
+            {/* <LiFiWidget integrator="CrushETH" config={widgetConfig} /> */}
+            <p className="font-mono text-sm">[LI.FI WIDGET LOADING...]</p>
+            <p className="text-xs mt-2 text-gray-600">(Disabled for verified build)</p>
         </div>
       </div>
     </div>

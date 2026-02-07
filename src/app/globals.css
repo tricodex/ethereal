@@ -1,26 +1,48 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Cyberpunk';
+  src: url('/assets/Background/Font/CyberpunkCraftpixPixel.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Cyberpunk Palette */
+  --neon-blue: #00f3ff;
+  --neon-pink: #ff00ff;
+  --neon-green: #0aff00;
+  --neon-yellow: #fcee0a;
+  --dark-bg: #050510;
+  --panel-bg: rgba(20, 20, 40, 0.8);
+  
+  --background: var(--dark-bg);
+  --foreground: #ffffff;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-neon-blue: var(--neon-blue);
+  --color-neon-pink: var(--neon-pink);
+  --color-neon-green: var(--neon-green);
+  --color-neon-yellow: var(--neon-yellow);
+  --color-panel-bg: var(--panel-bg);
+  
+  --font-cyberpunk: "Cyberpunk", monospace;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-cyberpunk), monospace;
+  overflow-x: hidden;
+  background-image: 
+    linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
+    url('/assets/Background/bg_night.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
 }

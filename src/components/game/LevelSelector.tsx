@@ -19,19 +19,22 @@ export const LevelSelector = ({ currentLevelId, onSelectLevel }: LevelSelectorPr
   // Group levels
   const worlds = [
     { id: 1, name: "ETHERIA GENESIS", desc: "Where it all began. Collect ETH to survive.", levels: LEVELS.filter(l => l.worldId === 1) },
-    { id: 2, name: "THE CRYO-VAULT", desc: "Funds are frozen. Smash the ice to withdraw.", levels: LEVELS.filter(l => l.worldId === 2) }
+    { id: 2, name: "THE CRYO-VAULT", desc: "Funds are frozen. Smash the ice to withdraw.", levels: LEVELS.filter(l => l.worldId === 2) },
+    { id: 3, name: "OBSIDIAN WASTES", desc: "Dark energy crystals block your path. Blast them!", levels: LEVELS.filter(l => l.worldId === 3) },
+    { id: 4, name: "THE GOLDEN VEIN", desc: "Rich deposits detected. Guide the gold to the bottom.", levels: LEVELS.filter(l => l.worldId === 4) },
+    { id: 5, name: "MERGE SINGULARITY", desc: "Total chaos. Ice, Rocks, and Gold collide.", levels: LEVELS.filter(l => l.worldId === 5) }
   ];
 
   const currentWorld = worlds.find(w => w.id === activeWorld) || worlds[0];
 
   return (
-    <div className="flex flex-col items-center gap-8 w-full max-w-4xl mx-auto p-4">
+    <div className="flex flex-col items-center gap-8 w-full max-w-6xl mx-auto p-4">
       <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[var(--neon-green)] to-[var(--neon-blue)] uppercase tracking-wider">
         Select Level
       </h2>
 
       {/* World Tabs */}
-      <div className="flex gap-4 mb-4">
+      <div className="flex flex-wrap justify-center gap-4 mb-4">
         {worlds.map(w => (
             <button
                 key={w.id}

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Board, Position, Level, MatchResult } from '@/lib/types';
-import { initializeBoard, swapGems, findMatches, removeMatches, applyGravity, checkSpecialInteraction } from '@/lib/game/engine';
+import { initializeBoard, swapGems, findMatches, removeMatches, applyGravity, checkSpecialInteraction, checkGoldCollection } from '@/lib/game/engine';
 import { LEVELS } from '@/lib/game/levels';
 import { FloatingText } from '@/components/game/FloatingScore';
 
@@ -16,6 +16,7 @@ interface GameState {
     currentLevelId: number;
     levelConfig: Level | null;
     collectedEth: number;
+    collectedGold: number; // New
     comboCount: number;
     floatingTexts: FloatingText[];
 
@@ -43,6 +44,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     currentLevelId: 1,
     levelConfig: DEFAULT_LEVEL,
     collectedEth: 0,
+    collectedGold: 0,
     comboCount: 0,
     floatingTexts: [],
 
@@ -62,8 +64,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         const config = LEVELS.find(l => l.id === targetLevelId) || DEFAULT_LEVEL;
 
         set({
-            set({
-                board: initializeBoard(config.iceCount || 0),
+            board: initializeBoard(config.iceCount || 0, config.rockCount || 0, config.goldPreload || 0),
             score: 0,
             moves: 0,
             isProcessing: false,
@@ -71,18 +72,19 @@ export const useGameStore = create<GameState>((set, get) => ({
             currentLevelId: targetLevelId,
             levelConfig: config,
             collectedEth: 0,
+            collectedGold: 0,
             comboCount: 0,
             floatingTexts: []
         });
     },
 
-nextLevel: () => {
-    const { currentLevelId } = get();
-    const nextId = currentLevelId + 1;
-    if (LEVELS.find(l => l.id === nextId)) {
-        get().initializeGame(nextId);
-    }
-},
+    nextLevel: () => {
+        const { currentLevelId } = get();
+        const nextId = currentLevelId + 1;
+        if (LEVELS.find(l => l.id === nextId)) {
+            get().initializeGame(nextId);
+        }
+    },
 
     selectGem: async (pos: Position) => {
         const { board, selectedGem, isProcessing, isGameOver, moves, levelConfig, collectedEth } = get();
@@ -184,6 +186,27 @@ nextLevel: () => {
             while (true) {
                 // Apply gravity
                 currentBoard = applyGravity(currentBoard);
+
+                // Check Gold Collection (New)
+                const goldCheck = checkGoldCollection(currentBoard);
+                if (goldCheck.count > 0) {
+                    currentBoard = applyGravity(goldCheck.board); // Fill gaps from collected gold
+                    // Add gold score
+                    const goldScore = goldCheck.count * 500;
+                    const accumulatedGold = get().collectedGold || 0;
+
+                    set(state => ({
+                        score: state.score + goldScore,
+                        collectedGold: (state.collectedGold || 0) + goldCheck.count
+                    }));
+
+                    get().addFloatingText({
+                        x: 200, y: 500, // Approximate mid-bottom
+                        text: `GOLD COLLECTED! +${goldScore}`,
+                        color: '#ffd700'
+                    });
+                }
+
                 set({ board: currentBoard });
                 await new Promise(r => setTimeout(r, 300)); // Drop speed
 

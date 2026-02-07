@@ -13,9 +13,11 @@ interface GemProps {
 
 export const Gem = ({ gem, isSelected, onClick, size = 50 }: GemProps) => {
   const isEth = gem.color === 7;
-  const imageSrc = isEth 
-    ? "/assets/CoreGems/ethereum.png"
-    : `/assets/CoreGems/shiny/${gem.color}.png`;
+  
+  let imageSrc = `/assets/CoreGems/shiny/${gem.color}.png`;
+  if (isEth) imageSrc = "/assets/CoreGems/ethereum.png";
+  if (gem.type === 'rock') imageSrc = "/assets/rock.png"; // Placeholder
+  if (gem.type === 'gold') imageSrc = "/assets/gold.png"; // Placeholder
 
   /* 
     Logic for special visuals:
@@ -39,24 +41,37 @@ export const Gem = ({ gem, isSelected, onClick, size = 50 }: GemProps) => {
         left: gem.x * size, 
         top: gem.y * size 
       }}
-      whileHover={{ scale: 1.1 }}
-      whileTap={{ scale: 0.9 }}
-      onClick={onClick}
+      whileHover={gem.type === 'rock' ? { rotate: [0, -2, 2, 0] } : { scale: 1.1 }}
+      whileTap={!gem.isFrozen && gem.type !== 'rock' ? { scale: 0.9 } : undefined}
+      onClick={() => gem.type !== 'rock' && onClick()}
     >
       <div className={clsx(
         "relative w-full h-full flex items-center justify-center rounded-full transition-all duration-300",
         isSelected && "ring-4 ring-[var(--neon-pink)] shadow-[0_0_15px_var(--neon-pink)] scale-110",
         gem.type === 'rainbow' && "animate-pulse shadow-[0_0_20px_purple] ring-2 ring-purple-500",
-        gem.type === 'bomb' && "scale-90"
+        gem.type === 'bomb' && "scale-90",
+        gem.type === 'rock' && "rounded-lg bg-gray-800 border-2 border-gray-600 shadow-[inset_0_0_10px_black]", // CSS Fallback for Rock
+        gem.type === 'gold' && "rounded-full bg-yellow-400 border-2 border-yellow-200 shadow-[0_0_15px_gold]"  // CSS Fallback for Gold
       )}>
-        <img 
-            src={imageSrc} 
-            alt="Gem" 
-            className={clsx(
-                "w-full h-full object-contain drop-shadow-lg",
-                gem.type === 'rainbow' && "hue-rotate-90 contrast-125 saturate-200"
-            )} 
-        />
+        {/* Render Image map */}
+        {(gem.type !== 'rock' && gem.type !== 'gold') && (
+             <img 
+                 src={imageSrc} 
+                 alt="Gem" 
+                 className={clsx(
+                     "w-full h-full object-contain drop-shadow-lg",
+                     gem.type === 'rainbow' && "hue-rotate-90 contrast-125 saturate-200"
+                 )} 
+             />
+        )}
+        
+        {/* Fallback Text/Icons if no asset for Rock/Gold yet, or simple CSS shapes */}
+        {gem.type === 'rock' && (
+            <div className="text-2xl opacity-50">🪨</div>
+        )}
+        {gem.type === 'gold' && (
+            <div className="text-2xl animate-bounce">🪙</div>
+        )}
         
         {/* Special Gem Overlays */}
         {gem.type === 'rocket_h' && (

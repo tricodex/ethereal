@@ -1,5 +1,5 @@
 export type GemColor = 1 | 2 | 3 | 4 | 5 | 6 | 7;
-export type GemType = 'simple' | 'rocket_h' | 'rocket_v' | 'bomb' | 'rainbow';
+export type GemType = 'simple' | 'rocket_h' | 'rocket_v' | 'bomb' | 'rainbow' | 'rock' | 'gold';
 
 export interface Gem {
     id: string; // Unique ID for keying
@@ -22,16 +22,20 @@ export interface MatchResult {
     matches: Gem[];
     transformations?: { gem: Gem, toType: GemType }[];
     score: number;
+    rocksDestroyed?: Position[]; // New tracking for rock fx
+    goldCollected?: number; // New tracking
 }
 
 export interface Level {
     id: number;
-    worldId: number; // New: World grouping
+    worldId: number;
     targetScore: number;
     moves: number;
-    iceCount?: number; // New: Initial frozen gems
+    iceCount?: number;
+    rockCount?: number; // New: Initial rocks
+    goldPreload?: number; // New: Initial gold
     objectives?: {
-        type: 'collect_eth' | 'clear_ice'; // Added clear_ice
+        type: 'collect_eth' | 'clear_ice' | 'collect_gold'; // Added collect_gold
         count: number;
     }[];
 }

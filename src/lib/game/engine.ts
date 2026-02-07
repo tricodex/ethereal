@@ -15,7 +15,7 @@ export const generateGem = (x: number, y: number, type: GemType = 'simple', colo
     };
 };
 
-export const initializeBoard = (iceCount: number = 0): Board => {
+export const initializeBoard = (iceCount: number = 0, rockCount: number = 0, goldCount: number = 0): Board => {
     const board: Board = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
 
     // 1. Generate Base Board
@@ -32,19 +32,41 @@ export const initializeBoard = (iceCount: number = 0): Board => {
         }
     }
 
-    // 2. Apply Ice (Randomly freeze 'iceCount' gems)
-    if (iceCount > 0) {
+    // Helper for random placement
+    const replaceRandom = (count: number, modifier: (gem: Gem) => void) => {
         let applied = 0;
         let attempts = 0;
-        while (applied < iceCount && attempts < 100) {
+        while (applied < count && attempts < 100) {
             const rx = Math.floor(Math.random() * COLS);
             const ry = Math.floor(Math.random() * ROWS);
-            if (board[ry][rx] && !board[ry][rx]!.isFrozen) {
-                board[ry][rx]!.isFrozen = true;
+            const gem = board[ry][rx];
+            if (gem && !gem.isFrozen && gem.type === 'simple') {
+                modifier(gem);
                 applied++;
             }
             attempts++;
         }
+    };
+
+    // 2. Apply Ice
+    if (iceCount > 0) {
+        replaceRandom(iceCount, (g) => g.isFrozen = true);
+    }
+
+    // 3. Apply Rocks
+    if (rockCount > 0) {
+        replaceRandom(rockCount, (g) => {
+            g.type = 'rock';
+            g.isFrozen = false; // prioritize rock over ice
+        });
+    }
+
+    // 4. Apply Gold
+    if (goldCount > 0) {
+        replaceRandom(goldCount, (g) => {
+            g.type = 'gold';
+            g.isFrozen = false;
+        });
     }
 
     return board;
@@ -81,12 +103,38 @@ export const findMatches = (board: Board): MatchResult => {
     // We need to track processed gems to avoid double counting for transformation
     const processedForTransform = new Set<string>();
 
+    const rocksDestroyed: Position[] = [];
+
+    // Helper to check for adjacent rocks
+    const checkAdjacentRocks = (gems: Gem[]) => {
+        gems.forEach(g => {
+            const neighbors = [
+                { x: g.x - 1, y: g.y }, { x: g.x + 1, y: g.y },
+                { x: g.x, y: g.y - 1 }, { x: g.x, y: g.y + 1 }
+            ];
+            neighbors.forEach(n => {
+                if (n.x >= 0 && n.x < COLS && n.y >= 0 && n.y < ROWS) {
+                    const target = board[n.y][n.x];
+                    if (target && target.type === 'rock') {
+                        // Mark rock for destruction
+                        // We treat it as a match for removal, but visual is different
+                        if (!matchedIds.has(target.id)) {
+                            matchedIds.add(target.id);
+                            matches.push(target);
+                            rocksDestroyed.push({ x: n.x, y: n.y });
+                        }
+                    }
+                }
+            });
+        });
+    };
+
     for (let y = 0; y < ROWS; y++) {
         for (let x = 0; x < COLS; x++) {
             const gem = board[y][x];
             if (!gem || processedForTransform.has(gem.id)) continue;
-            // Skip rainbows for standard matching
-            if (gem.type === 'rainbow') continue;
+            // Skip rainbows, rocks, gold for standard matching
+            if (gem.type === 'rainbow' || gem.type === 'rock' || gem.type === 'gold') continue;
 
             const horz = [
                 ...getConnected(gem, -1, 0).slice(1).reverse(), // Left
@@ -108,11 +156,10 @@ export const findMatches = (board: Board): MatchResult => {
             let matchGroup: Gem[] = [];
 
             // Check for L / T / + Shapes (Bomb)
-            // L/T/Cross: At least 3 horizontal AND 3 vertical sharing the same gem
             if (hLen >= 3 && vLen >= 3) {
                 isMatch = true;
-                toType = 'bomb'; // Wrapped Candy equivalent
-                matchGroup = [...new Set([...horz, ...vert])]; // Unique gems
+                toType = 'bomb';
+                matchGroup = [...new Set([...horz, ...vert])];
             }
             // Check for 5+ Line (Rainbow)
             else if (hLen >= 5 || vLen >= 5) {
@@ -123,12 +170,12 @@ export const findMatches = (board: Board): MatchResult => {
             // Check for 4 Line (Rocket)
             else if (hLen === 4) {
                 isMatch = true;
-                toType = 'rocket_v'; // Horizontal match creates Vertical Rocket (usually)
+                toType = 'rocket_v';
                 matchGroup = horz;
             }
             else if (vLen === 4) {
                 isMatch = true;
-                toType = 'rocket_h'; // Vertical match creates Horizontal Rocket
+                toType = 'rocket_h';
                 matchGroup = vert;
             }
             // Simple 3 Match
@@ -150,23 +197,18 @@ export const findMatches = (board: Board): MatchResult => {
                     }
                 });
 
+                // Check for Rock Destruction
+                checkAdjacentRocks(matchGroup);
+
                 // Handle Transformation
                 if (toType) {
-                    // Prefer the current gem as the transformation target if it's in the group
-                    // In a real game, this should be the gem that was SWAPPED to trigger the match
-                    // For now, simple logic: current gem is anchor
                     const target = gem;
-
                     if (!processedForTransform.has(target.id)) {
                         transformations.push({ gem: target, toType });
                         processedForTransform.add(target.id);
-
-                        // Prevent target from being strictly removed (it transforms instead)
-                        // It's handled in removeMatches separately
                     }
                 }
 
-                // Mark all as processed for transform check to avoid creating multiple specials for same group
                 matchGroup.forEach(g => processedForTransform.add(g.id));
             }
         }
@@ -175,7 +217,8 @@ export const findMatches = (board: Board): MatchResult => {
     return {
         matches,
         transformations,
-        score: matches.length * 10 + transformations.length * 50
+        score: matches.length * 10 + transformations.length * 50 + rocksDestroyed.length * 20,
+        rocksDestroyed
     };
 };
 
@@ -250,8 +293,9 @@ export const swapGems = (board: Board, pos1: Position, pos2: Position): Board =>
 
     if (!gem1 || !gem2) return board;
 
-    // RULE: Cannot move frozen gems
+    // RULE: Cannot move frozen gems OR rocks
     if (gem1.isFrozen || gem2.isFrozen) return board;
+    if (gem1.type === 'rock' || gem2.type === 'rock') return board;
 
     newBoard[pos1.y][pos1.x] = { ...gem2, x: pos1.x, y: pos1.y };
     newBoard[pos2.y][pos2.x] = { ...gem1, x: pos2.x, y: pos2.y };
@@ -351,6 +395,21 @@ export const removeMatches = (board: Board, matches: Gem[], transformations: { g
     });
 
     return newBoard;
+};
+
+export const checkGoldCollection = (board: Board): { board: Board, count: number } => {
+    let count = 0;
+    const newBoard = board.map(row => [...row]);
+
+    for (let x = 0; x < COLS; x++) {
+        const gem = newBoard[ROWS - 1][x]; // Bottom row
+        if (gem && gem.type === 'gold') {
+            newBoard[ROWS - 1][x] = null; // Remove gold
+            count++;
+        }
+    }
+
+    return { board: newBoard, count };
 };
 
 export const applyGravity = (board: Board): Board => {
