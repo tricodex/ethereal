@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Board, Position, Level } from '@/lib/types';
-import { initializeBoard, swapGems, findMatches, removeMatches, applyGravity } from '@/lib/game/engine';
+import { initializeBoard, swapGems, findMatches, removeMatches, applyGravity, checkSpecialInteraction } from '@/lib/game/engine';
 import { LEVELS } from '@/lib/game/levels';
 import { FloatingText } from '@/components/game/FloatingScore';
 
@@ -107,10 +107,25 @@ export const useGameStore = create<GameState>((set, get) => ({
         // Wait for swap animation (mock)
         await new Promise(r => setTimeout(r, 300));
 
-        const matchResult = findMatches(newBoard);
+        // Check for Special Gem Interactions (Prioritize over Match-3)
+        const interaction = checkSpecialInteraction(newBoard, selectedGem, pos);
+
+        let matchResult: MatchResult;
+        let isSpecialInteraction = false;
+
+        if (interaction.triggered) {
+            isSpecialInteraction = true;
+            matchResult = {
+                matches: interaction.matches,
+                transformations: [],
+                score: interaction.score
+            };
+        } else {
+            matchResult = findMatches(newBoard);
+        }
 
         if (matchResult.matches.length > 0) {
-            // Valid swap with matches
+            // Valid swap with matches or special interaction
             const newMoves = moves + 1;
 
             // Calculate ETH gems collected

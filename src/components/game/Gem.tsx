@@ -15,9 +15,7 @@ export const Gem = ({ gem, isSelected, onClick, size = 50 }: GemProps) => {
   const isEth = gem.color === 7;
   const imageSrc = isEth 
     ? "/assets/CoreGems/ethereum.png"
-    : `/assets/CoreGems/simple/${gem.color}.png`;
-
-  const isSpecial = gem.type !== 'simple';
+    : `/assets/CoreGems/shiny/${gem.color}.png`;
 
   /* 
     Logic for special visuals:
@@ -45,20 +43,41 @@ export const Gem = ({ gem, isSelected, onClick, size = 50 }: GemProps) => {
       whileTap={{ scale: 0.9 }}
       onClick={onClick}
     >
-         <div className="absolute inset-0 bg-red-500/30 rounded-full animate-ping z-0" />
-      )}
-      {gem.type === 'rainbow' && (
-         <div className="absolute inset-0 rounded-full z-0 bg-gradient-to-r from-red-500 via-green-500 to-blue-500 opacity-50 animate-spin" />
-      )}
-
-      <img
-        src={src}
-        alt={isEth ? "Ethereum Gem" : `Gem ${gem.color}`}
-        className={clsx(
-            "w-full h-full object-contain pointer-events-none select-none relative z-10",
-            isEth && "drop-shadow-[0_0_2px_rgba(255,255,255,0.5)]"
+      <div className={clsx(
+        "relative w-full h-full flex items-center justify-center rounded-full transition-all duration-300",
+        isSelected && "ring-4 ring-[var(--neon-pink)] shadow-[0_0_15px_var(--neon-pink)] scale-110",
+        gem.type === 'rainbow' && "animate-pulse shadow-[0_0_20px_purple] ring-2 ring-purple-500",
+        gem.type === 'bomb' && "scale-90"
+      )}>
+        <img 
+            src={imageSrc} 
+            alt="Gem" 
+            className={clsx(
+                "w-full h-full object-contain drop-shadow-lg",
+                gem.type === 'rainbow' && "hue-rotate-90 contrast-125 saturate-200"
+            )} 
+        />
+        
+        {/* Special Gem Overlays */}
+        {gem.type === 'rocket_h' && (
+             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                 <div className="w-full h-1 bg-white/80 blur-[1px] shadow-[0_0_5px_white]" />
+                 <div className="absolute w-full h-2 bg-transparent border-t-2 border-b-2 border-white/50" />
+             </div>
         )}
-      />
+        {gem.type === 'rocket_v' && (
+             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                 <div className="h-full w-1 bg-white/80 blur-[1px] shadow-[0_0_5px_white]" />
+                 <div className="absolute h-full w-2 bg-transparent border-l-2 border-r-2 border-white/50" />
+             </div>
+        )}
+        {gem.type === 'bomb' && (
+             <div className="absolute inset-0 rounded-full border-4 border-red-500/50 animate-ping pointer-events-none" />
+        )}
+        {gem.type === 'rainbow' && (
+             <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/30 to-transparent animate-spin opacity-50 pointer-events-none" />
+        )}
+      </div>
     </motion.div>
   );
 };

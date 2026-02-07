@@ -17,14 +17,19 @@ export const Board = () => {
     initializeGame();
   }, []);
 
+  // Determine shake intensity
+  const shake = comboCount > 2 ? 5 : 0;
+
   return (
-    <div 
+    <motion.div 
       className="relative bg-black/40 backdrop-blur-xl rounded-xl border-2 border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]"
       style={{
         width: COLS * GEM_SIZE + 32,
         height: ROWS * GEM_SIZE + 32,
         padding: 16
       }}
+      animate={{ x: [0, -shake, shake, -shake, shake, 0] }}
+      transition={{ duration: 0.4 }}
     >
       <div className="absolute inset-0 overflow-hidden rounded-xl">
         <FloatingScore texts={floatingTexts} />

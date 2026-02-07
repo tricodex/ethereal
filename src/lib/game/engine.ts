@@ -35,103 +35,122 @@ export const initializeBoard = (): Board => {
 
 // --- CORE REWRITE FOR MECHANICS ---
 
+// --- REFINED MATCHING LOGIC (L/T Shapes) ---
+
 export const findMatches = (board: Board): MatchResult => {
     const matchedIds = new Set<string>();
     const matches: Gem[] = [];
     const transformations: { gem: Gem, toType: GemType }[] = [];
 
-    // We scan for lines and handle merges
-    // Note: Simple greedy scan. Complex T/L detection requires graph/grouping logic
-    // We'll prioritize longer linear matches first.
+    // Helper to get connected gems of same color
+    const getConnected = (startGem: Gem, dx: number, dy: number): Gem[] => {
+        const connected: Gem[] = [startGem];
+        let x = startGem.x + dx;
+        let y = startGem.y + dy;
 
-    // 1. Horizontal
+        while (x >= 0 && x < COLS && y >= 0 && y < ROWS) {
+            const current = board[y][x];
+            if (current && current.color === startGem.color && current.type !== 'rainbow') { // Rainbow doesn't match color normally
+                connected.push(current);
+                x += dx;
+                y += dy;
+            } else {
+                break;
+            }
+        }
+        return connected;
+    };
+
+    // We need to track processed gems to avoid double counting for transformation
+    const processedForTransform = new Set<string>();
+
     for (let y = 0; y < ROWS; y++) {
         for (let x = 0; x < COLS; x++) {
             const gem = board[y][x];
-            if (!gem) continue;
+            if (!gem || processedForTransform.has(gem.id)) continue;
+            // Skip rainbows for standard matching
+            if (gem.type === 'rainbow') continue;
 
-            let length = 1;
-            while (x + length < COLS && board[y][x + length]?.color === gem.color) {
-                length++;
+            const horz = [
+                ...getConnected(gem, -1, 0).slice(1).reverse(), // Left
+                gem,
+                ...getConnected(gem, 1, 0).slice(1) // Right
+            ];
+
+            const vert = [
+                ...getConnected(gem, 0, -1).slice(1).reverse(), // Up
+                gem,
+                ...getConnected(gem, 0, 1).slice(1) // Down
+            ];
+
+            const hLen = horz.length;
+            const vLen = vert.length;
+
+            let isMatch = false;
+            let toType: GemType | null = null;
+            let matchGroup: Gem[] = [];
+
+            // Check for L / T / + Shapes (Bomb)
+            // L/T/Cross: At least 3 horizontal AND 3 vertical sharing the same gem
+            if (hLen >= 3 && vLen >= 3) {
+                isMatch = true;
+                toType = 'bomb'; // Wrapped Candy equivalent
+                matchGroup = [...new Set([...horz, ...vert])]; // Unique gems
+            }
+            // Check for 5+ Line (Rainbow)
+            else if (hLen >= 5 || vLen >= 5) {
+                isMatch = true;
+                toType = 'rainbow';
+                matchGroup = hLen >= 5 ? horz : vert;
+            }
+            // Check for 4 Line (Rocket)
+            else if (hLen === 4) {
+                isMatch = true;
+                toType = 'rocket_v'; // Horizontal match creates Vertical Rocket (usually)
+                matchGroup = horz;
+            }
+            else if (vLen === 4) {
+                isMatch = true;
+                toType = 'rocket_h'; // Vertical match creates Horizontal Rocket
+                matchGroup = vert;
+            }
+            // Simple 3 Match
+            else if (hLen >= 3) {
+                isMatch = true;
+                matchGroup = horz;
+            }
+            else if (vLen >= 3) {
+                isMatch = true;
+                matchGroup = vert;
             }
 
-            if (length >= 3) {
-                let toType: GemType | null = null;
-                if (length === 4) toType = 'rocket_h';
-                if (length >= 5) toType = 'rainbow';
-
-                // Collect gems
-                const lineGems: Gem[] = [];
-                for (let i = 0; i < length; i++) {
-                    const g = board[y][x + i];
-                    if (g) lineGems.push(g);
-                }
-
-                // If special, pick center-ish gem to transform
-                if (toType) {
-                    const centerIdx = Math.floor(length / 2);
-                    const targetGem = lineGems[centerIdx];
-
-                    // Don't add transformation if it's already being transformed from another pass (rare collision)
-                    if (!transformations.some(t => t.gem.id === targetGem.id)) {
-                        transformations.push({ gem: targetGem, toType });
-                        // Remove targetGem from clearing list so it stays
-                        lineGems.splice(centerIdx, 1);
-                    }
-                }
-
-                lineGems.forEach(g => {
+            if (isMatch) {
+                // Add to matches
+                matchGroup.forEach(g => {
                     if (!matchedIds.has(g.id)) {
                         matchedIds.add(g.id);
                         matches.push(g);
                     }
                 });
 
-                x += length - 1;
-            }
-        }
-    }
-
-    // 2. Vertical
-    for (let x = 0; x < COLS; x++) {
-        for (let y = 0; y < ROWS; y++) {
-            const gem = board[y][x];
-            if (!gem) continue;
-
-            let length = 1;
-            while (y + length < ROWS && board[y + length][x]?.color === gem.color) {
-                length++;
-            }
-
-            if (length >= 3) {
-                let toType: GemType | null = null;
-                if (length === 4) toType = 'rocket_v';
-                if (length >= 5) toType = 'rainbow';
-
-                const lineGems: Gem[] = [];
-                for (let i = 0; i < length; i++) {
-                    const g = board[y + i][x];
-                    if (g) lineGems.push(g);
-                }
-
+                // Handle Transformation
                 if (toType) {
-                    const centerIdx = Math.floor(length / 2);
-                    const targetGem = lineGems[centerIdx];
+                    // Prefer the current gem as the transformation target if it's in the group
+                    // In a real game, this should be the gem that was SWAPPED to trigger the match
+                    // For now, simple logic: current gem is anchor
+                    const target = gem;
 
-                    if (!transformations.some(t => t.gem.id === targetGem.id)) {
-                        transformations.push({ gem: targetGem, toType });
-                        lineGems.splice(centerIdx, 1);
+                    if (!processedForTransform.has(target.id)) {
+                        transformations.push({ gem: target, toType });
+                        processedForTransform.add(target.id);
+
+                        // Prevent target from being strictly removed (it transforms instead)
+                        // It's handled in removeMatches separately
                     }
                 }
 
-                lineGems.forEach(g => {
-                    if (!matchedIds.has(g.id)) {
-                        matchedIds.add(g.id);
-                        matches.push(g);
-                    }
-                });
-
-                y += length - 1;
+                // Mark all as processed for transform check to avoid creating multiple specials for same group
+                matchGroup.forEach(g => processedForTransform.add(g.id));
             }
         }
     }
@@ -141,6 +160,70 @@ export const findMatches = (board: Board): MatchResult => {
         transformations,
         score: matches.length * 10 + transformations.length * 50
     };
+};
+
+export const checkSpecialInteraction = (board: Board, gem1: Gem, gem2: Gem): { triggered: boolean, matches: Gem[], score: number } => {
+    // 1. Rainbow + Rainbow = Clear Screen
+    if (gem1.type === 'rainbow' && gem2.type === 'rainbow') {
+        return {
+            triggered: true,
+            matches: board.flat().filter(g => g !== null) as Gem[],
+            score: 5000
+        };
+    }
+
+    // 2. Rainbow + Color/Special
+    if (gem1.type === 'rainbow' || gem2.type === 'rainbow') {
+        const rainbow = gem1.type === 'rainbow' ? gem1 : gem2;
+        const other = gem1.type === 'rainbow' ? gem2 : gem1;
+
+        if (other.type === 'simple') {
+            // Clear all of that color
+            return {
+                triggered: true,
+                matches: board.flat().filter(g => g?.color === other.color) as Gem[],
+                score: 2000
+            };
+        } else {
+            // Rainbow + Special (Turn all of that color into that Special!)
+            // We need a way to Signal "Transform then Explode" - handled in Store usually?
+            // For engine purity, we'll return all matching color gems, but we need the Store to know to Transform them first.
+            // Simplified for now: Just explode them all.
+            // In Phase 9 Polish, we ideally return a specific "Action" type. 
+            // We'll treat it as a massive match for now.
+            return {
+                triggered: true,
+                matches: board.flat().filter(g => g?.color === other.color) as Gem[],
+                score: 3000
+            };
+        }
+    }
+
+    // 3. Rocket + Bomb = Giant Cross (3 rows/cols)
+    if ((gem1.type.includes('rocket') && gem2.type === 'bomb') || (gem2.type.includes('rocket') && gem1.type === 'bomb')) {
+        // We will simulate this by returning a list of targets centered on gem1
+        // Actually, we need to return "triggered" and let the store handle the complex explosion logic via removeMatches
+        // But removeMatches needs 'matches'.
+        // Let's identify the cross area.
+        const targets: Gem[] = [];
+        for (let r = -1; r <= 1; r++) {
+            for (let x = 0; x < COLS; x++) {
+                if (gem1.y + r >= 0 && gem1.y + r < ROWS) targets.push(board[gem1.y + r][x]!);
+            }
+        }
+        for (let c = -1; c <= 1; c++) {
+            for (let y = 0; y < ROWS; y++) {
+                if (gem1.x + c >= 0 && gem1.x + c < COLS) targets.push(board[y][gem1.x + c]!);
+            }
+        }
+        return {
+            triggered: true,
+            matches: [...new Set(targets.filter(t => t))],
+            score: 1000
+        };
+    }
+
+    return { triggered: false, matches: [], score: 0 };
 };
 
 export const swapGems = (board: Board, pos1: Position, pos2: Position): Board => {
