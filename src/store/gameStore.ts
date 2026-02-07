@@ -24,6 +24,10 @@ interface GameState {
     selectGem: (pos: Position) => Promise<void>;
     nextLevel: () => void;
     addFloatingText: (text: Omit<FloatingText, 'id'>) => void;
+
+    // Debug
+    debugUnlockAll: boolean;
+    setDebugUnlockAll: (unlocked: boolean) => void;
 }
 
 const DEFAULT_LEVEL = LEVELS[0];
@@ -49,6 +53,9 @@ export const useGameStore = create<GameState>((set, get) => ({
             set(state => ({ floatingTexts: state.floatingTexts.filter(t => t.id !== id) }));
         }, 1200);
     },
+
+    debugUnlockAll: false,
+    setDebugUnlockAll: (unlocked) => set({ debugUnlockAll: unlocked }),
 
     initializeGame: (levelId?: number) => {
         const targetLevelId = levelId || get().currentLevelId;
