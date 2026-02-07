@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Board, Position, Level } from '@/lib/types';
+import { Board, Position, Level, MatchResult } from '@/lib/types';
 import { initializeBoard, swapGems, findMatches, removeMatches, applyGravity, checkSpecialInteraction } from '@/lib/game/engine';
 import { LEVELS } from '@/lib/game/levels';
 import { FloatingText } from '@/components/game/FloatingScore';
