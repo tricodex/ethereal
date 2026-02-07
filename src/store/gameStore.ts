@@ -108,18 +108,24 @@ export const useGameStore = create<GameState>((set, get) => ({
         await new Promise(r => setTimeout(r, 300));
 
         // Check for Special Gem Interactions (Prioritize over Match-3)
-        const interaction = checkSpecialInteraction(newBoard, selectedGem, pos);
+        // Check for Special Gem Interactions (Prioritize over Match-3)
+        // Find full Gem objects from positions
+        const gem1 = newBoard[selectedGem.y][selectedGem.x];
+        const gem2 = newBoard[pos.y][pos.x];
 
-        let matchResult: MatchResult;
-        let isSpecialInteraction = false;
+        let matchResult: MatchResult; // Explicitly type matchResult here
 
-        if (interaction.triggered) {
-            isSpecialInteraction = true;
-            matchResult = {
-                matches: interaction.matches,
-                transformations: [],
-                score: interaction.score
-            };
+        if (gem1 && gem2) {
+            const interaction = checkSpecialInteraction(newBoard, gem1, gem2);
+            if (interaction.triggered) {
+                matchResult = {
+                    matches: interaction.matches,
+                    transformations: [],
+                    score: interaction.score
+                };
+            } else {
+                matchResult = findMatches(newBoard);
+            }
         } else {
             matchResult = findMatches(newBoard);
         }

@@ -87,6 +87,6 @@ export const Board = () => {
             )}
         </AnimatePresence>
       </div>
-    </div>
+    </motion.div>
   );
 };
