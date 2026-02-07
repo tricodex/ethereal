@@ -77,6 +77,14 @@ export const Gem = ({ gem, isSelected, onClick, size = 50 }: GemProps) => {
         {gem.type === 'rainbow' && (
              <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/30 to-transparent animate-spin opacity-50 pointer-events-none" />
         )}
+
+        {/* Ice Overlay */}
+        {gem.isFrozen && (
+            <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] border-2 border-white/60 rounded-lg shadow-[0_0_10px_rgba(255,255,255,0.5)] z-20 pointer-events-none flex items-center justify-center">
+                <div className="w-full h-full bg-[url('/assets/ice-texture.png')] opacity-30 bg-cover" />
+                <div className="absolute top-1 right-1 w-2 h-2 bg-white rounded-full shadow-[0_0_5px_white]" />
+            </div>
+        )}
       </div>
     </motion.div>
   );

@@ -62,7 +62,8 @@ export const useGameStore = create<GameState>((set, get) => ({
         const config = LEVELS.find(l => l.id === targetLevelId) || DEFAULT_LEVEL;
 
         set({
-            board: initializeBoard(),
+            set({
+                board: initializeBoard(config.iceCount || 0),
             score: 0,
             moves: 0,
             isProcessing: false,
@@ -75,13 +76,13 @@ export const useGameStore = create<GameState>((set, get) => ({
         });
     },
 
-    nextLevel: () => {
-        const { currentLevelId } = get();
-        const nextId = currentLevelId + 1;
-        if (LEVELS.find(l => l.id === nextId)) {
-            get().initializeGame(nextId);
-        }
-    },
+nextLevel: () => {
+    const { currentLevelId } = get();
+    const nextId = currentLevelId + 1;
+    if (LEVELS.find(l => l.id === nextId)) {
+        get().initializeGame(nextId);
+    }
+},
 
     selectGem: async (pos: Position) => {
         const { board, selectedGem, isProcessing, isGameOver, moves, levelConfig, collectedEth } = get();

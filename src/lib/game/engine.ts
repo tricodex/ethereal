@@ -15,9 +15,10 @@ export const generateGem = (x: number, y: number, type: GemType = 'simple', colo
     };
 };
 
-export const initializeBoard = (): Board => {
+export const initializeBoard = (iceCount: number = 0): Board => {
     const board: Board = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
 
+    // 1. Generate Base Board
     for (let y = 0; y < ROWS; y++) {
         for (let x = 0; x < COLS; x++) {
             let gem: Gem;
@@ -30,6 +31,22 @@ export const initializeBoard = (): Board => {
             board[y][x] = gem;
         }
     }
+
+    // 2. Apply Ice (Randomly freeze 'iceCount' gems)
+    if (iceCount > 0) {
+        let applied = 0;
+        let attempts = 0;
+        while (applied < iceCount && attempts < 100) {
+            const rx = Math.floor(Math.random() * COLS);
+            const ry = Math.floor(Math.random() * ROWS);
+            if (board[ry][rx] && !board[ry][rx]!.isFrozen) {
+                board[ry][rx]!.isFrozen = true;
+                applied++;
+            }
+            attempts++;
+        }
+    }
+
     return board;
 };
 
@@ -230,7 +247,11 @@ export const swapGems = (board: Board, pos1: Position, pos2: Position): Board =>
     const newBoard = board.map(row => [...row]);
     const gem1 = newBoard[pos1.y][pos1.x];
     const gem2 = newBoard[pos2.y][pos2.x];
+
     if (!gem1 || !gem2) return board;
+
+    // RULE: Cannot move frozen gems
+    if (gem1.isFrozen || gem2.isFrozen) return board;
 
     newBoard[pos1.y][pos1.x] = { ...gem2, x: pos1.x, y: pos1.y };
     newBoard[pos2.y][pos2.x] = { ...gem1, x: pos2.x, y: pos2.y };
@@ -304,19 +325,28 @@ export const removeMatches = (board: Board, matches: Gem[], transformations: { g
         }
     });
 
-    // 2. Remove exploded gems
+    // 2. Remove exploded gems OR Unfreeze them
     allExplodedGems.forEach(g => {
         // Don't remove if it's becoming a special gem
         if (!transformations.some(t => t.gem.id === g.id)) {
-            newBoard[g.y][g.x] = null;
+            const currentGem = newBoard[g.y][g.x];
+            if (currentGem?.isFrozen) {
+                // UNFREEZE instead of remove
+                newBoard[g.y][g.x] = { ...currentGem, isFrozen: false };
+            } else {
+                newBoard[g.y][g.x] = null;
+            }
         }
     });
 
     // 3. Apply Transformations (Morph source gems into special ones)
     transformations.forEach(t => {
+        // If transforming a frozen gem, it stays frozen but becomes special? 
+        // Or unfreezes? Let's say it unfreezes to be generous.
         newBoard[t.gem.y][t.gem.x] = {
             ...t.gem,
-            type: t.toType
+            type: t.toType,
+            isFrozen: false
         };
     });
 

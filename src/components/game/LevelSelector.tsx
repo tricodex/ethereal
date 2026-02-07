@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useGameStore } from "@/store/gameStore";
 import { LEVELS } from "@/lib/game/levels";
 import clsx from "clsx";
@@ -13,15 +14,47 @@ interface LevelSelectorProps {
 
 export const LevelSelector = ({ currentLevelId, onSelectLevel }: LevelSelectorProps) => {
   const { debugUnlockAll } = useGameStore();
+  const [activeWorld, setActiveWorld] = useState(1);
+  
+  // Group levels
+  const worlds = [
+    { id: 1, name: "ETHER PLAINS", desc: "The journey begins.", levels: LEVELS.filter(l => l.worldId === 1) },
+    { id: 2, name: "FROZEN STAKING", desc: "Break the ice to release your assets.", levels: LEVELS.filter(l => l.worldId === 2) }
+  ];
+
+  const currentWorld = worlds.find(w => w.id === activeWorld) || worlds[0];
 
   return (
-    <div className="flex flex-col items-center gap-8 w-full max-w-2xl mx-auto p-4">
+    <div className="flex flex-col items-center gap-8 w-full max-w-4xl mx-auto p-4">
       <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[var(--neon-green)] to-[var(--neon-blue)] uppercase tracking-wider">
         Select Level
       </h2>
 
-      <div className="grid grid-cols-4 gap-6">
-        {LEVELS.map((level) => {
+      {/* World Tabs */}
+      <div className="flex gap-4 mb-4">
+        {worlds.map(w => (
+            <button
+                key={w.id}
+                onClick={() => setActiveWorld(w.id)}
+                className={clsx(
+                    "px-6 py-2 rounded-full font-bold uppercase tracking-widest transition-all",
+                    activeWorld === w.id 
+                    ? "bg-[var(--neon-pink)] text-white shadow-[0_0_15px_var(--neon-pink)]"
+                    : "bg-white/5 text-gray-400 hover:bg-white/10"
+                )}
+            >
+                World {w.id}
+            </button>
+        ))}
+      </div>
+
+      <div className="text-center mb-8">
+        <h3 className="text-2xl font-bold text-white">{currentWorld.name}</h3>
+        <p className="text-[var(--neon-blue)] font-mono text-sm">{currentWorld.desc}</p>
+      </div>
+
+      <div className="grid grid-cols-4 md:grid-cols-5 gap-6">
+        {currentWorld.levels.map((level) => {
             const isLocked = !debugUnlockAll && level.id > currentLevelId; // Check debug flag
             
             return (
@@ -32,7 +65,7 @@ export const LevelSelector = ({ currentLevelId, onSelectLevel }: LevelSelectorPr
                     disabled={isLocked}
                     onClick={() => onSelectLevel(level.id)}
                     className={clsx(
-                        "relative w-24 h-24 rounded-2xl flex flex-col items-center justify-center border-2 transition-all",
+                        "relative w-20 h-20 md:w-24 md:h-24 rounded-2xl flex flex-col items-center justify-center border-2 transition-all",
                         isLocked 
                             ? "border-gray-800 bg-gray-900/50 text-gray-600 cursor-not-allowed"
                             : "border-[var(--neon-blue)] bg-[var(--neon-blue)]/10 text-white cursor-pointer shadow-[0_0_15px_rgba(0,243,255,0.3)] hover:bg-[var(--neon-blue)]/20"

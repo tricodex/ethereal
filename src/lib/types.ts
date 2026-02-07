@@ -8,6 +8,7 @@ export interface Gem {
     x: number;
     y: number;
     isMatched?: boolean;
+    isFrozen?: boolean; // New: Frozen state
 }
 
 export type Board = (Gem | null)[][];
@@ -25,10 +26,12 @@ export interface MatchResult {
 
 export interface Level {
     id: number;
+    worldId: number; // New: World grouping
     targetScore: number;
     moves: number;
+    iceCount?: number; // New: Initial frozen gems
     objectives?: {
-        type: 'collect_eth';
+        type: 'collect_eth' | 'clear_ice'; // Added clear_ice
         count: number;
     }[];
 }
