@@ -16,12 +16,23 @@ const SLIDES = [
                 <motion.div 
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    className="relative"
+                    className="relative flex items-center justify-center gap-8"
                 >
-                    <div className="absolute inset-0 bg-blue-500 blur-3xl opacity-20 rounded-full" />
-                    <h1 className="text-8xl font-black text-white relative z-10 drop-shadow-[0_0_15px_rgba(0,0,0,1)]">
-                        ETHEREAL
-                    </h1>
+                    <div className="relative w-32 h-32">
+                        <div className="absolute inset-0 bg-blue-500 blur-3xl opacity-40 rounded-full" />
+                        <Image 
+                            src="/logo.png" 
+                            alt="Ethereal Logo" 
+                            fill
+                            className="object-contain relative z-10 drop-shadow-[0_0_15px_rgba(0,0,0,0.5)]"
+                        />
+                    </div>
+                    <div className="relative">
+                        <div className="absolute inset-0 bg-blue-500 blur-3xl opacity-20 rounded-full" />
+                        <h1 className="text-8xl font-black text-white relative z-10 drop-shadow-[0_0_15px_rgba(0,0,0,1)]">
+                            ETHEREAL
+                        </h1>
+                    </div>
                 </motion.div>
                 <motion.h2 
                     initial={{ y: 20, opacity: 0 }}
