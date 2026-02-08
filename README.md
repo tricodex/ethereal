@@ -17,9 +17,11 @@ This project creates a Speed Layer where game moves happen off-chain via state c
 *   **On-Chain Finality**: The session close is triggered on the `GameEscrow` contract on Arc, initiating the settlement flow.
 
 **Code References:**
-*   `src/hooks/useNitrolite.ts`: Core hook handling WebSocket connection (`wss://clearnet-sandbox.yellow.com/ws`), session creation (`createAppSessionMessage`), and off-chain payments.
-*   `src/app/yellow-market/page.tsx`: UI implementation showing real-time latency and session status.
-*   `scripts/test-yellow-connectivity.ts`: Verification script proving connectivity to the Yellow Node.
+*   [`src/hooks/useNitrolite.ts:L22-55`](src/hooks/useNitrolite.ts#L22-55): **Connect Logic**. Establishes WebSocket connection to `wss://clearnet-sandbox.yellow.com/ws`.
+*   [`src/hooks/useNitrolite.ts:L80-126`](src/hooks/useNitrolite.ts#L80-126): **Session Creation**. Implements `createAppSessionMessage` to open the state channel.
+*   [`src/hooks/useNitrolite.ts:L128-158`](src/hooks/useNitrolite.ts#L128-158): **Off-Chain Payment**. Signs and sends `payment` messages instantly to the State Channel.
+*   [`src/app/yellow-market/page.tsx:L39-76`](src/app/yellow-market/page.tsx#L39-76): **Settlement Trigger**. Signs the final balance and submits it to `GameEscrow.settleSession` on Arc.
+*   [`contracts/src/GameEscrow.sol:L77-84`](contracts/src/GameEscrow.sol#L77-84): **On-Chain Settlement**. The `settleSession` function that finalizes the state on the blockchain.
 
 ---
 
@@ -33,9 +35,10 @@ CrushETH treats Arc as the Economic OS. Users from any chain (Arbitrum, Base, Se
 *   **Chain Abstraction**: The `GatewayDepositModal` detects the user's chain and routes liquidity automatically.
 
 **Code References:**
-*   `src/hooks/useGateway.ts`: Implements `depositToGateway` and `transferToArc` using typed data signing (EIP-712) for CCTP burn intents.
-*   `src/components/web3/GatewayDepositModal.tsx`: UI that manages the cross-chain flow.
-*   `contracts/GameEscrow.sol`: The solidity contract deployed on Arc Testnet (`0x0996c2e70E4Eb633A95258D2699Cb965368A3CB6`).
+*   [`src/hooks/useGateway.ts:L182-234`](src/hooks/useGateway.ts#L182-234): **Deposit Logic**. `depositToGateway` function handling ERC20 approvals and Gateway deposits.
+*   [`src/hooks/useGateway.ts:L237-350`](src/hooks/useGateway.ts#L237-350): **CCTP Bridge**. `transferToArc` function implementing EIP-712 signing for `BurnIntent` and minting on Arc via `GatewayMinter`.
+*   [`src/components/web3/GatewayDepositModal.tsx`](src/components/web3/GatewayDepositModal.tsx): UI component that orchestrates the multi-chain chain switching and deposit flow.
+*   [`contracts/src/GameEscrow.sol:L31-36`](contracts/src/GameEscrow.sol#L31-36): **Liquidity Hub**. The `deposit` function enabling the contract to hold game treasury funds on Arc.
 
 ---
 
@@ -49,8 +52,8 @@ Identity is critical for casual games. An address like `0x71...` is intimidating
 *   **Social Context**: The Sidebar uses ENS resolution to show your identity. The Leaderboard page demonstrates how this identity layer would look in a global context.
 
 **Code References:**
-*   `src/components/layout/Header.tsx`: Implements `useEnsName` and `useEnsAvatar` for the main player profile.
-*   `src/components/layout/Sidebar.tsx`: Persistent identity display.
+*   [`src/components/web3/EnsProfile.tsx:L8-15`](src/components/web3/EnsProfile.tsx#L8-15): **Identity Resolution**. Uses `useEnsName` and `useEnsAvatar` to fetch Mainnet identity for the connected wallet.
+*   [`src/components/layout/Header.tsx`](src/components/layout/Header.tsx): Displays the resolved avatar and name in the high-visibility player hud.
 
 ---
 
@@ -133,3 +136,8 @@ graph TD
 *   **Protocol SDKs**:
     *   `@erc7824/nitrolite` ^0.5.3 (Yellow)
     *   Circle CCTP (Arc)
+137: 
+138: ## ⚠️ Hackathon Disclaimer
+139: 
+140: *   **Yellow Settlement**: The `GameEscrow` contract verifies that a signature *exists* and matches the session ID, but for this MVP, it trusts the sender's signature as the Yellow Node's authority. A production version would verify against a registered Node Public Key.
+141: *   **Arc Bridge**: The CCTP integration uses the Testnet environment. Bridging times depend on Circle's Testnet attestation service.
