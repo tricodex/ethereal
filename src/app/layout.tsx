@@ -6,6 +6,7 @@ import { Header } from "@/components/layout/Header";
 import { DailyRewardModal } from "@/components/game/DailyRewardModal";
 import { YellowGameObserver } from "@/components/game/YellowGameObserver";
 import { GameLogViewer } from "@/components/game/GameLogViewer";
+import { BackgroundMusic } from "@/components/audio/BackgroundMusic";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,6 +40,7 @@ export default function RootLayout({
                 <DailyRewardModal />
                 <YellowGameObserver />
                 <GameLogViewer />
+                <BackgroundMusic />
                 {children}
             </div>
         </Providers>

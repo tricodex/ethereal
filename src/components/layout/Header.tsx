@@ -49,6 +49,29 @@ export const Header = () => {
                     
                     {/* Yellow Network Integration */}
                     <YellowStatus />
+                    
+                    <button 
+                        onClick={useGameStore((s) => s.toggleMusic)}
+                        className={`p-2 rounded-full transition-all ${
+                            useGameStore((s) => !s.isMusicMuted) 
+                            ? "bg-[var(--neon-blue)]/20 text-[var(--neon-blue)] hover:bg-[var(--neon-blue)]/30 animate-pulse" 
+                            : "bg-gray-800/50 text-gray-500 hover:text-gray-300"
+                        }`}
+                        title={useGameStore((s) => s.isMusicMuted ? "Unmute Music" : "Mute Music")}
+                    >
+                         {useGameStore((s) => !s.isMusicMuted) ? (
+                            <div className="flex gap-0.5 items-end h-3">
+                                <span className="w-0.5 h-full bg-current animate-[bounce_1s_infinite]" />
+                                <span className="w-0.5 h-2/3 bg-current animate-[bounce_1.2s_infinite]" />
+                                <span className="w-0.5 h-full bg-current animate-[bounce_0.8s_infinite]" />
+                            </div>
+                         ) : (
+                            <div className="w-4 h-4 flex items-center justify-center relative">
+                                <span className="w-3 h-3 border-2 border-current rounded-full" />
+                                <span className="absolute w-[120%] h-0.5 bg-current rotate-45" />
+                            </div>
+                         )}
+                    </button>
                     </nav>
 
                     <button

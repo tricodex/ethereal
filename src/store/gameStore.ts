@@ -46,6 +46,10 @@ interface GameState {
     setDebugUnlockAll: (unlocked: boolean) => void;
     debugFreeStore: boolean;
     setDebugFreeStore: (free: boolean) => void;
+
+    // Audio
+    isMusicMuted: boolean;
+    toggleMusic: () => void;
 }
 
 export type QuestType = 'collect_gold' | 'destroy_rocks' | 'score_points' | 'complete_levels' | 'match_gems';
@@ -252,6 +256,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     setDebugUnlockAll: (unlocked) => set({ debugUnlockAll: unlocked }),
     debugFreeStore: false,
     setDebugFreeStore: (free) => set({ debugFreeStore: free }),
+
+    isMusicMuted: false, // Default Music ON
+    toggleMusic: () => set(state => ({ isMusicMuted: !state.isMusicMuted })),
 
     initializeGame: (levelId?: number) => {
         const targetLevelId = levelId || get().currentLevelId;
