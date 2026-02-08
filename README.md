@@ -14,7 +14,7 @@ This project creates a Speed Layer where game moves happen off-chain via state c
 *   **SDK Integration**: Uses `@erc7824/nitrolite` to connect to the ClearNet Sandbox.
 *   **State Channels**: Every Buy action in the Yellow Market opens a cryptographically secure session.
 *   **Off-Chain Settlement**: Moves are signed instantly without gas.
-*   **On-Chain Finality**: The session result is settled to the `GameEscrow` contract on Arc.
+*   **On-Chain Finality**: The session close is triggered on the `GameEscrow` contract on Arc, initiating the settlement flow.
 
 **Code References:**
 *   `src/hooks/useNitrolite.ts`: Core hook handling WebSocket connection (`wss://clearnet-sandbox.yellow.com/ws`), session creation (`createAppSessionMessage`), and off-chain payments.
@@ -46,7 +46,7 @@ Identity is critical for casual games. An address like `0x71...` is intimidating
 
 *   **Primary Name Resolution**: Automatically resolves the connected wallet's ENS name in the Header and Sidebar.
 *   **Avatar Integration**: Fetches and displays the ENS Avatar record (`text/avatar`) as the player's profile picture.
-*   **Social Context**: The Sidebar uses real ENS resolution to show your identity. The Leaderboard page demonstrates how this identity layer would look in a global context.
+*   **Social Context**: The Sidebar uses ENS resolution to show your identity. The Leaderboard page demonstrates how this identity layer would look in a global context.
 
 **Code References:**
 *   `src/components/layout/Header.tsx`: Implements `useEnsName` and `useEnsAvatar` for the main player profile.
