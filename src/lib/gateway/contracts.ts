@@ -1,7 +1,7 @@
 // Circle Gateway Contract Addresses and Configuration
 // https://developers.circle.com/gateway
 
-import { defineChain } from 'viem';
+import { defineChain, type Chain } from 'viem';
 import {
     mainnet,
     sepolia,
@@ -36,7 +36,7 @@ export type NetworkConfig = {
     GatewayWallet: `0x${string}`;
     GatewayMinter: `0x${string}`;
     USDCAddress: `0x${string}`;
-    ViemChain: { id: number; name: string; [key: string]: any };
+    ViemChain: Chain;
 };
 
 export type ChainConfig = {

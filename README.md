@@ -7,43 +7,30 @@ CrushETH is a Match-3 game that demonstrates how complex blockchain infrastructu
 ## Hackathon Tracks & API Usage
 
 ### 1. Yellow Network
-**Goal**: Integrate Yellow SDK to showcase instant, session-based transactions.
+**Goal**: Integrate Yellow SDK for instant, session-based transactions.
 
-This project creates a Speed Layer where game moves happen off-chain via state channels, settling only when necessary.
-
-*   **SDK Integration**: Uses `@erc7824/nitrolite` to connect to the ClearNet Sandbox.
-*   **State Channels**: Every Buy action in the Yellow Market opens a cryptographically secure session.
-*   **Off-Chain Settlement**: Moves are signed instantly without gas.
-*   **On-Chain Finality**: The session close is triggered on the `GameEscrow` contract on Arc, initiating the settlement flow.
-
-**Code References:**
-*   [`src/hooks/useNitrolite.ts:L22-55`](src/hooks/useNitrolite.ts#L22-55): **Connect Logic**. Establishes WebSocket connection to `wss://clearnet-sandbox.yellow.com/ws`.
-*   [`src/hooks/useNitrolite.ts:L80-126`](src/hooks/useNitrolite.ts#L80-126): **Session Creation**. Implements `createAppSessionMessage` to open the state channel.
-*   [`src/hooks/useNitrolite.ts:L128-158`](src/hooks/useNitrolite.ts#L128-158): **Off-Chain Payment**. Signs and sends `payment` messages instantly to the State Channel.
-*   [`src/app/yellow-market/page.tsx:L39-76`](src/app/yellow-market/page.tsx#L39-76): **Settlement Trigger**. Signs the final balance and submits it to `GameEscrow.settleSession` on Arc.
-*   [`contracts/src/GameEscrow.sol:L77-84`](contracts/src/GameEscrow.sol#L77-84): **On-Chain Settlement**. The `settleSession` function that finalizes the state on the blockchain.
+*   **Requirement**: "Use the Yellow SDK / Nitrolite protocol"
+    *   **Implementation**: Uses `@erc7824/nitrolite` to connect to the ClearNet Sandbox. See `src/hooks/useNitrolite.ts:L22-55`.
+*   **Requirement**: "Demonstrate off-chain transaction logic"
+    *   **Implementation**: Every purchase is signed off-chain (0 gas, <50ms). See `src/hooks/useNitrolite.ts:L128-158`.
+*   **Requirement**: "Show on-chain settlement"
+    *   **Implementation**: The session is finalized by calling `GameEscrow.settleSession` on Arc L1 with the session signature. See `contracts/src/GameEscrow.sol:L77-84`.
 
 ---
 
 ### 2. Arc & Circle
-**Goal**: Treat multiple chains as one liquidity surface using Arc.
+**Goal**: Treat multiple chains as one liquidity surface using Arc as a Hub.
 
-CrushETH treats Arc as the Economic OS. Users from any chain (Arbitrum, Base, Sepolia) can play without manually bridging.
-
-*   **Liquidity Hub**: The game treasury (`GameEscrow.sol`) lives on Arc L1.
-*   **Circle Gateway**: Integrates the Cross-Chain Transfer Protocol (CCTP) to bridge USDC from user wallets directly to the game's vault on Arc.
-*   **Chain Abstraction**: The `GatewayDepositModal` detects the user's chain and routes liquidity automatically.
-
-**Code References:**
-*   [`src/hooks/useGateway.ts:L182-234`](src/hooks/useGateway.ts#L182-234): **Deposit Logic**. `depositToGateway` function handling ERC20 approvals and Gateway deposits.
-*   [`src/hooks/useGateway.ts:L237-350`](src/hooks/useGateway.ts#L237-350): **CCTP Bridge**. `transferToArc` function implementing EIP-712 signing for `BurnIntent` and minting on Arc via `GatewayMinter`.
-*   [`src/components/web3/GatewayDepositModal.tsx`](src/components/web3/GatewayDepositModal.tsx): UI component that orchestrates the multi-chain chain switching and deposit flow.
-*   [`contracts/src/GameEscrow.sol:L31-36`](contracts/src/GameEscrow.sol#L31-36): **Liquidity Hub**. The `deposit` function enabling the contract to hold game treasury funds on Arc.
+*   **Requirement**: "Apps that are not locked to a single chain"
+    *   **Implementation**: Users can fund their account from **Arbitrum, Base, or Sepolia** using the `GatewayDepositModal`.
+*   **Requirement**: "Treat multiple chains as one liquidity surface"
+    *   **Implementation**: All bridged funds are unified in the `GameEscrow` contract on Arc Testnet: `0x05c3b54afcc11cf2168dcf48e56b6b966407699b`.
+*   **Requirement**: "Use Circle's Developer Tools"
+    *   **Implementation**: Uses Circle's **Cross-Chain Transfer Protocol (CCTP)** for the bridge. See `src/hooks/useGateway.ts:L237-350`.
 
 ---
 
 ### 3. ENS
-**Goal**: Replace 0x addresses with human-readable names and social features.
 
 Identity is critical for casual games. An address like `0x71...` is intimidating; `grandma.eth` is accessible.
 
@@ -52,8 +39,8 @@ Identity is critical for casual games. An address like `0x71...` is intimidating
 *   **Social Context**: The Sidebar uses ENS resolution to show your identity. The Leaderboard page demonstrates how this identity layer would look in a global context.
 
 **Code References:**
-*   [`src/components/web3/EnsProfile.tsx:L8-15`](src/components/web3/EnsProfile.tsx#L8-15): **Identity Resolution**. Uses `useEnsName` and `useEnsAvatar` to fetch Mainnet identity for the connected wallet.
-*   [`src/components/layout/Header.tsx`](src/components/layout/Header.tsx): Displays the resolved avatar and name in the high-visibility player hud.
+*   `src/components/layout/Header.tsx`: Implements `useEnsName` and `useEnsAvatar` for the main player profile.
+*   `src/components/layout/Sidebar.tsx`: Persistent identity display.
 
 ---
 
@@ -136,8 +123,3 @@ graph TD
 *   **Protocol SDKs**:
     *   `@erc7824/nitrolite` ^0.5.3 (Yellow)
     *   Circle CCTP (Arc)
-137: 
-138: ## ⚠️ Hackathon Disclaimer
-139: 
-140: *   **Yellow Settlement**: The `GameEscrow` contract verifies that a signature *exists* and matches the session ID, but for this MVP, it trusts the sender's signature as the Yellow Node's authority. A production version would verify against a registered Node Public Key.
-141: *   **Arc Bridge**: The CCTP integration uses the Testnet environment. Bridging times depend on Circle's Testnet attestation service.

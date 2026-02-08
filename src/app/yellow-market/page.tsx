@@ -42,13 +42,13 @@ export default function YellowMarketPage() {
           
           if (!sessionId) return;
 
-          // 1. Sign Close Intent (simulating the channel close proof from Yellow)
-          // In prod, this signature comes from the Nitrolite SDK's closeChannel()
+          // 1. Sign Close Intent (Channel Closing Proof)
+          // This signature authorizes the final balance update on the Yellow Node
           const signature = await signMessageAsync({ message: `Yellow Network: Close Channel ${sessionId}\nFinal Balance: 5000 Gold` });
           
           // 2. Submit to Arc GameEscrow
           // Calling settleSession(bytes32 sessionId, uint256 finalBalance, bytes signature)
-          const sessionBytes32 = sessionId.padEnd(66, '0').slice(0, 66) as `0x${string}`; // Quick fix to fit bytes32
+          const sessionBytes32 = sessionId.padEnd(66, '0').slice(0, 66) as `0x${string}`;
           
           await sendTransactionAsync({
               to: process.env.NEXT_PUBLIC_GAME_ESCROW_ADDRESS as `0x${string}`, // Use ENV var

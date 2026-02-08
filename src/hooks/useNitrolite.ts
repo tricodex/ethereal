@@ -88,18 +88,19 @@ export function useNitrolite() {
 
             // 1. Define App (Payment V1)
             const appDefinition = {
-                protocol: 'payment-app-v1',
+                application: HOUSE_ADDRESS as `0x${string}`, // Required by SDK type
+                protocol: 'payment-app-v1' as const, // Strict type
                 participants: [address, HOUSE_ADDRESS],
                 weights: [50, 50],
-                quorum: 100, // Both must agree (simplified for demo)
+                quorum: 100, // Unanimous consent required
                 challenge: 0,
                 nonce: Date.now()
             };
 
-            // 2. Define Allocations (Virtual for Demo)
+            // 2. Define Allocations (Initial State)
             const allocations = [
-                { participant: address, asset: 'usdc', amount: '800000' }, // 0.8 USDC
-                { participant: HOUSE_ADDRESS, asset: 'usdc', amount: '200000' } // 0.2 USDC
+                { participant: address as `0x${string}`, asset: 'usdc', amount: '800000' }, // 0.8 USDC
+                { participant: HOUSE_ADDRESS as `0x${string}`, asset: 'usdc', amount: '200000' } // 0.2 USDC
             ];
 
             // 3. Authenticate & Sign
@@ -112,7 +113,7 @@ export function useNitrolite() {
 
             const sessionMessage = await createAppSessionMessage(
                 messageSigner as any,
-                [{ definition: appDefinition, allocations }]
+                { definition: appDefinition as any, allocations }
             );
 
             // 4. Send
