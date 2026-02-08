@@ -106,8 +106,8 @@ const SLIDES = [
                         </div>
                         <div className="flex items-center gap-2 text-yellow-500/50 text-sm font-mono">
                             <span>INTEGRATION:</span>
-                            <span className="bg-yellow-500/10 px-2 py-1 rounded">Yellow SDK</span>
-                            <span className="bg-yellow-500/10 px-2 py-1 rounded">YellowGameObserver.tsx</span>
+                            <span className="bg-yellow-500/10 px-2 py-1 rounded">Yellow SDK (Nitrolite)</span>
+                            <span className="bg-yellow-500/10 px-2 py-1 rounded">useNitrolite.ts (Live)</span>
                         </div>
                     </div>
                     <div className="relative border border-yellow-500/10 bg-black/50 rounded-3xl p-8 flex flex-col items-center justify-center">
