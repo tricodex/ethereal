@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Header } from "@/components/layout/Header";
+import { DailyRewardModal } from "@/components/game/DailyRewardModal";
+import { YellowGameObserver } from "@/components/game/YellowGameObserver";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,11 +29,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
+        suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
             <div className="min-h-screen flex flex-col items-center">
                 <Header />
+                <DailyRewardModal />
+                <YellowGameObserver />
                 {children}
             </div>
         </Providers>

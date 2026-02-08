@@ -1,10 +1,10 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
-import { arc } from './chains';
-import { sepolia } from 'wagmi/chains';
+import { arcTestnet } from './chains';
+import { sepolia, mainnet } from 'wagmi/chains';
 
 export const config = getDefaultConfig({
     appName: 'CrushETH',
-    projectId: 'YOUR_PROJECT_ID', // TODO: Get WalletConnect ID
-    chains: [arc, sepolia],
-    ssr: true, // If your dApp uses server side rendering (SSR)
+    projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'YOUR_PROJECT_ID',
+    chains: [arcTestnet, sepolia, mainnet], // mainnet for ENS resolution
+    ssr: true,
 });

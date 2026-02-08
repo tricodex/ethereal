@@ -1,4 +1,3 @@
-```typescript
 import { Level } from "@/lib/types";
 
 const GENERATED_LEVELS: Level[] = Array.from({ length: 50 }, (_, i) => {
@@ -11,7 +10,7 @@ const GENERATED_LEVELS: Level[] = Array.from({ length: 50 }, (_, i) => {
     // L21-30: Obsidian Wastes (Rocks)
     // L31-40: Golden Vein (Gold)
     // L41-50: Merge Singularity (Chaos)
-    
+
     let worldId = 1;
     let iceCount = 0;
     let rockCount = 0;
@@ -41,16 +40,16 @@ const GENERATED_LEVELS: Level[] = Array.from({ length: 50 }, (_, i) => {
         objectives.push({ type: 'collect_gold', count: 3 });
         objectives.push({ type: 'clear_ice', count: 10 });
     }
-    
-    let moves = 15 + Math.floor(id / 2) * 2; 
-    if (moves > 50) moves = 50; 
+
+    let moves = 15 + Math.floor(id / 2) * 2;
+    if (moves > 50) moves = 50;
 
     let targetScore = 1000 * id * (isHard ? 1.5 : 1);
-    
+
     // Base Objective (ETH) for almost all levels
-    objectives.push({ 
-        type: 'collect_eth', 
-        count: 5 + Math.floor(id * 1.2) 
+    objectives.push({
+        type: 'collect_eth',
+        count: 5 + Math.floor(id * 1.2)
     });
 
     return {
@@ -66,4 +65,3 @@ const GENERATED_LEVELS: Level[] = Array.from({ length: 50 }, (_, i) => {
 });
 
 export const LEVELS: Level[] = GENERATED_LEVELS;
-```

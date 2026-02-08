@@ -8,6 +8,7 @@ import { TutorialOverlay } from "@/components/game/TutorialOverlay";
 import { ArrowLeft } from "lucide-react";
 
 import { Sidebar } from "@/components/game/Sidebar";
+import { MechanicsPanel } from "@/components/game/MechanicsPanel";
 
 import { LevelCompleteModal } from "@/components/game/LevelCompleteModal";
 
@@ -33,13 +34,20 @@ export default function Home() {
         onBackToLevels={handleBackToLevels} 
       />
 
-      <div className={`grid grid-cols-1 ${isPlaying ? 'lg:grid-cols-[1fr_320px]' : 'lg:grid-cols-1'} gap-8 items-center transition-all duration-500`}>
+      <div className={`grid grid-cols-1 ${isPlaying ? 'xl:grid-cols-[300px_1fr_300px] lg:grid-cols-[1fr_300px]' : 'lg:grid-cols-1'} gap-4 md:gap-8 items-start transition-all duration-500`}>
+        
+        {/* Left Sidebar: Mechanics (Desktop XL only) */}
+        {isPlaying && (
+            <div className="sticky top-24 hidden xl:block animate-in slide-in-from-left-10 fade-in duration-700">
+                <MechanicsPanel />
+            </div>
+        )}
+
         {/* Main Game Area */}
-        {/* Main Game Area */}
-        <div className="flex flex-col items-center gap-4 lg:gap-8">
+        <div className="flex flex-col items-center gap-4 lg:gap-8 min-h-[calc(100vh-160px)] justify-center">
             <div className="text-center space-y-2 relative z-10 animate-in fade-in slide-in-from-top-4 duration-700">
                 <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-pink)] drop-shadow-[0_0_10px_rgba(255,0,255,0.5)]">
-                CRUSH ETH
+                ETHEREAL
                 </h1>
             </div>
 
