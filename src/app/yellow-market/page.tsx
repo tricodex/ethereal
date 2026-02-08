@@ -22,6 +22,7 @@ export default function YellowMarketPage() {
       logs: nitroLogs,
       isAuthenticated,
       isSessionActive,
+      reconnect,
   } = useNitrolite();
 
   const [isSettling, setIsSettling] = useState(false);
@@ -142,6 +143,12 @@ export default function YellowMarketPage() {
                   >
                       Connect to Yellow
                   </button>
+                  <button 
+                      onClick={() => reconnect()}
+                      className="text-[10px] text-gray-600 hover:text-red-400 underline decoration-dotted transition-colors"
+                  >
+                      Reset Connection
+                  </button>
               </div>
            );
       }
@@ -238,9 +245,9 @@ export default function YellowMarketPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {[
                         { name: "Rocket Pack", price: 1.99, icon: "/assets/SpecialGems/42.png", bonus: "Instant" },
-                        { name: "Infinite Lives", price: 4.99, icon: "/assets/SpecialGems/47.png", bonus: "1 Hour" },
-                        { name: "Gold Chest (5k)", price: 9.99, icon: "/assets/SpecialGems/50.png", bonus: "Best Value" },
-                        { name: "Mystery Box", price: 0.99, icon: "/assets/SpecialGems/myst_1.png", bonus: "Random" }, // Fallback to a known good or text if missing
+                        { name: "Infinite Lives", price: 4.99, icon: "/assets/SpecialGems/50.png", bonus: "1 Hour" },
+                        { name: "Gold Chest (5k)", price: 9.99, icon: "/assets/SpecialGems/47.png", bonus: "Best Value" },
+                        { name: "Mystery Box", price: 0.99, icon: "/assets/SpecialGems/23.png", bonus: "Random" }, // Fallback to a known good or text if missing
                     ].map((item, i) => (
                         <div key={i} className={`relative p-6 rounded-2xl border transition-all ${sessionActive ? "bg-white/5 border-white/10 hover:border-yellow-500/50 group cursor-pointer" : "bg-white/5 border-white/5 opacity-50 cursor-not-allowed"}`}>
                            <div className="flex justify-between items-start mb-4">

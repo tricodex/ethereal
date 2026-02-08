@@ -45,7 +45,7 @@ export const Header = () => {
                     <Link href="/" className="hover:text-white transition-colors">PLAY</Link>
                     <Link href="/rewards" className="hover:text-white transition-colors text-[var(--neon-pink)] animate-pulse font-bold">REWARDS</Link>
                     <button onClick={() => setIsQuestOpen(true)} className="hover:text-white transition-colors">QUESTS</button>
-                    <Link href="/leaderboard" className="hover:text-white transition-colors">LEADERBOARD</Link>
+                    {/* <Link href="/leaderboard" className="hover:text-white transition-colors">LEADERBOARD</Link> */}
                     
                     {/* Yellow Network Integration */}
                     <YellowStatus />

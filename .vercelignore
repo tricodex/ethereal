@@ -1,0 +1,7 @@
+# Exclude smart contracts and deployment scripts from Vercel build
+contracts/
+scripts/
+
+# Also exclude redundant documentation if large
+*.pdf
+*.zip

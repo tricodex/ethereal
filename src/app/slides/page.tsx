@@ -106,26 +106,47 @@ const SLIDES = [
                 <div className="grid grid-cols-2 gap-16">
                     <div className="space-y-8">
                         <p className="text-2xl text-gray-300 leading-relaxed">
-                            We use <span className="text-yellow-400 font-bold">State Channels</span> to let users play 100s of moves without a single transaction.
+                            <span className="text-yellow-400 font-bold">State Channels</span> allow us to deposit crypto once and make lightning-fast transactions without waiting for blockchain confirmations.
                         </p>
-                        <div className="p-6 bg-yellow-500/5 border border-yellow-500/20 rounded-2xl space-y-4">
-                            <div className="flex items-center gap-4">
-                                <Zap className="text-yellow-500 w-8 h-8" />
-                                <span className="text-xl font-bold text-white">Gasless Gameplay</span>
+                        <div className="space-y-4">
+                            <div className="p-4 bg-yellow-500/5 border border-yellow-500/20 rounded-xl flex items-start gap-4">
+                                <Zap className="text-yellow-500 w-6 h-6 mt-1 shrink-0" />
+                                <div>
+                                    <h4 className="font-bold text-white">Session-Based Logic</h4>
+                                    <p className="text-sm text-gray-400">Lock funds once. Execute unlimited off-chain operations. Settle final balance on-chain.</p>
+                                </div>
                             </div>
-                            <p className="text-gray-400">Lock funds once. Play forever. Settle only when you leave.</p>
-                        </div>
-                        <div className="flex items-center gap-2 text-yellow-500/50 text-sm font-mono">
-                            <span>INTEGRATION:</span>
-                            <span className="bg-yellow-500/10 px-2 py-1 rounded">Yellow SDK (Nitrolite)</span>
-                            <span className="bg-yellow-500/10 px-2 py-1 rounded">useNitrolite.ts (Live)</span>
+                            <div className="p-4 bg-yellow-500/5 border border-yellow-500/20 rounded-xl flex items-start gap-4">
+                                <Clock className="text-yellow-500 w-6 h-6 mt-1 shrink-0" />
+                                <div>
+                                    <h4 className="font-bold text-white">Web2 Speed, Web3 Security</h4>
+                                    <p className="text-sm text-gray-400">Feels instant like a regular app. Secured by smart contracts that act as safes.</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div className="relative border border-yellow-500/10 bg-black/50 rounded-3xl p-8 flex flex-col items-center justify-center">
-                        <div className="text-center space-y-4">
-                            <h4 className="text-gray-500 uppercase tracking-widest text-sm">Example Economy</h4>
-                            <div className="text-6xl font-black text-white">$0.00</div>
-                            <div className="text-yellow-500 font-mono">GAS FEES PER MOVE</div>
+                        <div className="space-y-6 w-full">
+                            <div className="flex justify-between items-center text-sm text-gray-500 uppercase tracking-widest font-mono border-b border-white/10 pb-2">
+                                <span>Comparison</span>
+                                <span>100 Moves</span>
+                            </div>
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-red-400">Traditional L1</span>
+                                    <div className="text-right">
+                                        <div className="text-white font-bold">$100+ Gas</div>
+                                        <div className="text-xs text-red-500">100 Transactions</div>
+                                    </div>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-yellow-400">Yellow Network</span>
+                                    <div className="text-right">
+                                        <div className="text-white font-bold">$0.00 Gas</div>
+                                        <div className="text-xs text-yellow-500">2 Transactions (Open/Close)</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -143,29 +164,30 @@ const SLIDES = [
                     </div>
                     <div>
                         <h3 className="text-[#00f3ff] text-xl font-mono font-bold uppercase tracking-widest">The Economic OS</h3>
-                        <h2 className="text-5xl font-bold text-white">Base Sepolia & Circle</h2>
+                        <h2 className="text-5xl font-bold text-white">Arc & Circle</h2>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-8">
                     <div className="p-8 bg-[#00f3ff]/5 border border-[#00f3ff]/20 rounded-3xl space-y-4">
                         <Wallet className="w-10 h-10 text-[#00f3ff]" />
-                        <h4 className="text-xl font-bold text-white">USDC Liquidity Hub</h4>
+                        <h4 className="text-xl font-bold text-white">Chain Abstraction</h4>
                         <p className="text-gray-400">
-                            The game acts as a liquidity sink, accepting USDC from any chain via <span className="text-[#00f3ff]">Circle Gateway</span>.
+                            We treat multiple chains as one liquidity surface. Users don't need to know where they are.
                         </p>
                     </div>
                     <div className="p-8 bg-[#00f3ff]/5 border border-[#00f3ff]/20 rounded-3xl space-y-4">
                         <ExternalLink className="w-10 h-10 text-[#00f3ff]" />
-                        <h4 className="text-xl font-bold text-white">Cross-Chain Payments</h4>
+                        <h4 className="text-xl font-bold text-white">Liquidity Hub</h4>
                         <p className="text-gray-400">
-                            Users on Arbitrum, Optimism, or Sepolia can deposit instantly to Base Sepolia using our <span className="font-mono text-sm bg-white/10 px-1 rounded">GatewayDepositModal</span>.
+                            Using <span className="text-[#00f3ff]">Arc</span> to source, route, and settle USDC capital across currencies and asset classes.
                         </p>
                     </div>
                     <div className="p-8 bg-[#00f3ff]/5 border border-[#00f3ff]/20 rounded-3xl space-y-4">
-                        <h4 className="text-xl font-bold text-white">Base Sepolia</h4>
+                        <Zap className="w-10 h-10 text-[#00f3ff]" />
+                        <h4 className="text-xl font-bold text-white">Circle Gateway</h4>
                         <p className="text-gray-400">
-                            Deployed <span className="font-mono text-sm bg-white/10 px-1 rounded">GameEscrow.sol</span> on Base Sepolia to leverage its low-cost infrastructure.
+                            Bridging USDC seamlessly from Arbitrum, Optimism, or Mainnet without fragmenting the user experience.
                         </p>
                     </div>
                 </div>
@@ -190,32 +212,34 @@ const SLIDES = [
                 <div className="grid grid-cols-2 gap-16 items-center">
                     <div className="space-y-8">
                         <p className="text-2xl text-gray-300 leading-relaxed">
-                            No one knows who <span className="font-mono text-gray-500">0x71C...9A</span> is.
-                            <br/>
-                            Everyone knows <span className="text-indigo-400 font-bold">grandma.eth</span>.
+                            ENS isn't just a name mapping; it's a portable Web3 profile.
                         </p>
                         <div className="p-6 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center text-xl">👵</div>
+                            <div className="w-16 h-16 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center text-3xl">👵</div>
                             <div>
-                                <div className="text-white font-bold text-lg">grandma.eth</div>
-                                <div className="text-indigo-300/50 text-sm">0x1234...5678</div>
+                                <div className="text-white font-bold text-2xl">grandma.eth</div>
+                                <div className="flex gap-2 mt-2">
+                                     <span className="bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded text-xs">email</span>
+                                     <span className="bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded text-xs">twitter</span>
+                                     <span className="bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded text-xs">avatar</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                     <div className="space-y-4">
-                        <h4 className="text-indigo-400 font-bold uppercase tracking-widest text-sm">Integration Highlights</h4>
+                        <h4 className="text-indigo-400 font-bold uppercase tracking-widest text-sm">Creative Integration</h4>
                         <ul className="space-y-4">
                             <li className="flex items-center gap-3 bg-white/5 p-4 rounded-xl border border-white/5">
                                 <span className="text-green-400">✓</span>
-                                <span className="text-gray-300">Name Resolution (Primary Name)</span>
+                                <span className="text-gray-300">Replacing 0x Addresses globally</span>
                             </li>
                             <li className="flex items-center gap-3 bg-white/5 p-4 rounded-xl border border-white/5">
                                 <span className="text-green-400">✓</span>
-                                <span className="text-gray-300">Avatar Resolution (Metadata)</span>
+                                <span className="text-gray-300">Resolving Social Records (Context for Vibe Check)</span>
                             </li>
                             <li className="flex items-center gap-3 bg-white/5 p-4 rounded-xl border border-white/5">
                                 <span className="text-green-400">✓</span>
-                                <span className="text-gray-300">Social Profile Integration</span>
+                                <span className="text-gray-300">Humanizing the "Scary" Blockchain</span>
                             </li>
                         </ul>
                     </div>

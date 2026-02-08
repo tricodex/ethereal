@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react';
 import {
     createAuthRequestMessage,
-    createAuthVerifyMessage,
+    createAuthVerifyMessageFromChallenge,
     createAppSessionMessage,
     createSubmitAppStateMessage,
     createCloseAppSessionMessage,
@@ -13,9 +13,10 @@ import {
     type RPCAppSessionAllocation,
     type RPCAppDefinition,
     type MessageSigner,
-    type RPCData,
+    RPCData,
     NitroliteClient,
     WalletStateSigner,
+    createPingMessageV2, 
 } from '@erc7824/nitrolite';
 import { useAccount, useWalletClient, usePublicClient } from 'wagmi';
 import { type Hex, type Address, toHex } from 'viem';
@@ -32,6 +33,7 @@ interface NitroliteContextType {
     sendPayment: (amount: bigint) => Promise<void>;
     closeSession: () => Promise<{ allocations: RPCAppSessionAllocation[] } | null>;
     disconnect: () => void;
+    reconnect: () => Promise<void>;
     depositToCustody: (amount: bigint) => Promise<Hex | null>;
     status: 'disconnected' | 'connecting' | 'authenticated' | 'session_active';
     sessionId: Hex | null;
@@ -49,7 +51,7 @@ const NitroliteContext = createContext<NitroliteContextType | null>(null);
 export function NitroliteProvider({ children }: { children: React.ReactNode }) {
     const { address } = useAccount();
     const { data: walletClient } = useWalletClient();
-    const publicClient = usePublicClient();
+    const publicClient = usePublicClient({ chainId: BASE_SEPOLIA_YELLOW.chainId });
     const wsRef = useRef<WebSocket | null>(null);
 
     const [status, setStatus] = useState<'disconnected' | 'connecting' | 'authenticated' | 'session_active'>('disconnected');
@@ -75,17 +77,29 @@ export function NitroliteProvider({ children }: { children: React.ReactNode }) {
     }, [walletClient]);
 
     // Handle auth verification after receiving challenge
-    const handleAuthVerify = useCallback(async (challengeResponse: any) => {
+    const handleAuthVerify = useCallback(async (params: any) => {
         const signer = createSigner();
         if (!signer || !wsRef.current) return;
 
         try {
+            // Server sends params: { challenge_message: "..." }
+            // SDK types might expect challengeMessage. We handle both.
+            const challengeStr = params.challenge_message || params.challengeMessage || params.challenge;
+            
+            if (!challengeStr) {
+                 addLog(`❌ Auth failed: Missing challenge string in ${JSON.stringify(params)}`);
+                 return;
+            }
+
             addLog("🔐 Verifying auth...");
-            const verifyMessage = await createAuthVerifyMessage(signer, challengeResponse);
+            // Use specific function for string challenge to avoid object shape mismatch
+            const verifyMessage = await createAuthVerifyMessageFromChallenge(signer, challengeStr);
+            
             wsRef.current.send(verifyMessage);
             setStatus('authenticated');
             addLog("✅ Authenticated with Yellow Network");
         } catch (e: any) {
+            console.error("Auth Verify Error:", e);
             addLog(`❌ Auth verify failed: ${e.message}`);
         }
     }, [createSigner, addLog]);
@@ -139,12 +153,42 @@ export function NitroliteProvider({ children }: { children: React.ReactNode }) {
 
                 // Generic success
                 addLog(`✓ RPC OK`);
+                return;
+            }
+
+            // Handle Server Requests (Method calls)
+            if (message && typeof message === 'object' && 'method' in message) {
+                const method = (message as any).method;
+                const params = (message as any).params;
+
+                if (method === 'auth_challenge') {
+                    addLog(`🔐 Auth challenge received (Method)`);
+                    handleAuthVerify(params);
+                    return;
+                }
+
+                if (method === 'error') {
+                    addLog(`❌ Server Error: ${JSON.stringify(params)}`);
+                    console.error("Server Error details:", params);
+                    return;
+                }
             }
         } catch (e) {
             console.error("Parse error", e);
             addLog(`⚠️ Parse error: ${e}`);
         }
     }, [addLog, handleAuthVerify]);
+
+    // Disconnect WebSocket
+    const disconnect = useCallback(() => {
+        if (wsRef.current) {
+            wsRef.current.close();
+            wsRef.current = null;
+        }
+        setStatus('disconnected');
+        setSessionId(null);
+        setCurrentAllocations([]);
+    }, []);
 
     // Connect to WebSocket and authenticate
     const connect = useCallback(async () => {
@@ -153,53 +197,71 @@ export function NitroliteProvider({ children }: { children: React.ReactNode }) {
             return;
         }
 
-        if (wsRef.current?.readyState === WebSocket.OPEN) return;
+        // Retry / Reconnect logic
+        if (wsRef.current?.readyState === WebSocket.OPEN || wsRef.current?.readyState === WebSocket.CONNECTING) return;
 
         setStatus('connecting');
-        addLog(`Connecting to Yellow Network...`);
+        addLog(`Connecting to ${YELLOW_WS_URL}...`);
+        
+        try {
+            const ws = new WebSocket(YELLOW_WS_URL);
+            wsRef.current = ws;
 
-        const ws = new WebSocket(YELLOW_WS_URL);
-        wsRef.current = ws;
+            ws.onopen = async () => {
+                addLog('✅ WebSocket Connected');
 
-        ws.onopen = async () => {
-            addLog('✅ WebSocket Connected');
+                // Start authentication flow
+                try {
+                    const authMessage = await createAuthRequestMessage({
+                        address: address as Address,
+                        session_key: address as Address, // Using main wallet as session key for simplicity
+                        application: APPLICATION,
+                        allowances: [
+                            { asset: BASE_SEPOLIA_YELLOW.usdc, amount: '10000000' }, // 10 USDC allowance
+                        ],
+                        expires_at: BigInt(Math.floor(Date.now() / 1000) + 86400), // 24 hours
+                        scope: 'game',
+                    });
 
-            // Start authentication flow
-            try {
-                const authMessage = await createAuthRequestMessage({
-                    address: address as Address,
-                    session_key: address as Address, // Using main wallet as session key for simplicity
-                    application: APPLICATION,
-                    allowances: [
-                        { asset: 'usdc', amount: '10000000' }, // 10 USDC allowance
-                    ],
-                    expires_at: BigInt(Math.floor(Date.now() / 1000) + 86400), // 24 hours
-                    scope: 'game',
-                });
+                    console.log("Auth Message Payload:", authMessage);
+                    ws.send(authMessage);
+                    addLog(`📤 Auth sent (Asset: ${BASE_SEPOLIA_YELLOW.usdc.slice(0,6)}...)`); 
+                } catch (e: any) {
+                    console.error("Auth generation error:", e);
+                    addLog(`❌ Auth request failed: ${e.message}`);
+                }
+            };
 
-                ws.send(authMessage);
-                addLog("📤 Auth request sent");
-            } catch (e: any) {
-                addLog(`❌ Auth request failed: ${e.message}`);
-            }
-        };
+            ws.onmessage = (event) => {
+                handleMessage(event.data);
+            };
 
-        ws.onmessage = (event) => {
-            handleMessage(event.data);
-        };
+            ws.onclose = (event) => {
+                console.log("WS Close:", event.code, event.reason);
+                // Only clean up if this is still the current socket
+                if (wsRef.current === ws) {
+                    wsRef.current = null;
+                    setStatus('disconnected');
+                    setSessionId(null);
+                }
+                addLog(`WebSocket Disconnected (Code: ${event.code})`);
+            };
 
-        ws.onclose = () => {
-            setStatus('disconnected');
-            setSessionId(null);
-            addLog('WebSocket Disconnected');
-        };
-
-        ws.onerror = (err) => {
-            console.error(err);
-            setStatus('disconnected');
-            addLog('❌ Connection Error');
-        };
+            ws.onerror = (err) => {
+                console.error("WS Error:", err);
+                addLog('❌ Connection Error - Retrying in 3s...');
+            };
+        } catch (err) {
+             addLog(`❌ Socket Init Failed: ${err}`);
+        }
     }, [address, walletClient, handleMessage, addLog]);
+
+    // Force Reconnect Helper
+    const reconnect = useCallback(async () => {
+        disconnect();
+        // Wait a bit for cleanup
+        setTimeout(connect, 500);
+    }, [disconnect, connect]);
 
     // Deposit to Yellow Custody on Base Sepolia
     const depositToCustody = useCallback(async (amount: bigint) => {
@@ -221,11 +283,22 @@ export function NitroliteProvider({ children }: { children: React.ReactNode }) {
                     custody: BASE_SEPOLIA_YELLOW.custody,
                 },
                 chainId: BASE_SEPOLIA_YELLOW.chainId,
-                challengeDuration: 60n, // 1 minute for testnet
+                challengeDuration: 86400n, // Minimum 3600s required. Using 24h.
             });
 
-            // client.deposit handles approve + deposit logic internally if implemented,
-            // or we might need to approve manually first. Assuming client.deposit does standard checks.
+            // Manual Approve-Wait-Deposit Flow to prevent race conditions
+            const allowance = await client.getTokenAllowance(BASE_SEPOLIA_YELLOW.usdc);
+            
+            if (allowance < amount) {
+                addLog(`🔐 Approving USDC... (Please sign)`);
+                const approveTx = await client.approveTokens(BASE_SEPOLIA_YELLOW.usdc, amount);
+                addLog(`⏳ Waiting for Approval: ${approveTx.slice(0, 10)}...`);
+                
+                await publicClient.waitForTransactionReceipt({ hash: approveTx });
+                addLog(`✅ Approval Confirmed`);
+            }
+
+            addLog(`💰 Signing Deposit...`);
             const txHash = await client.deposit(BASE_SEPOLIA_YELLOW.usdc, amount);
 
             addLog(`✅ Deposit Tx: ${txHash.slice(0, 10)}...`);
@@ -262,9 +335,10 @@ export function NitroliteProvider({ children }: { children: React.ReactNode }) {
 
             // Allocations based on deposit
             // Player gets what they deposited. House gets a base liquidity (e.g., 0.2 USDC or matching)
+            // Asset must be the actual USDC contract address (matching auth allowances)
             const allocations: RPCAppSessionAllocation[] = [
-                { participant: address as Address, asset: 'usdc', amount: depositAmount.toString() },
-                { participant: HOUSE_ADDRESS, asset: 'usdc', amount: '200000' }, // House liquidity
+                { participant: address as Address, asset: BASE_SEPOLIA_YELLOW.usdc, amount: depositAmount.toString() },
+                { participant: HOUSE_ADDRESS, asset: BASE_SEPOLIA_YELLOW.usdc, amount: '200000' }, // House liquidity
             ];
 
             // Save initial allocations for state tracking
@@ -304,8 +378,8 @@ export function NitroliteProvider({ children }: { children: React.ReactNode }) {
             }
 
             const newAllocations: RPCAppSessionAllocation[] = [
-                { participant: address as Address, asset: 'usdc', amount: playerAmount.toString() },
-                { participant: HOUSE_ADDRESS, asset: 'usdc', amount: houseAmount.toString() },
+                { participant: address as Address, asset: BASE_SEPOLIA_YELLOW.usdc, amount: playerAmount.toString() },
+                { participant: HOUSE_ADDRESS, asset: BASE_SEPOLIA_YELLOW.usdc, amount: houseAmount.toString() },
             ];
 
             const newVersion = stateVersion + 1;
@@ -362,15 +436,17 @@ export function NitroliteProvider({ children }: { children: React.ReactNode }) {
         }
     }, [sessionId, currentAllocations, createSigner, addLog]);
 
-    // Disconnect WebSocket
-    const disconnect = useCallback(() => {
-        if (wsRef.current) {
-            wsRef.current.close();
-            wsRef.current = null;
-        }
-        setStatus('disconnected');
-        setSessionId(null);
-        setCurrentAllocations([]);
+    // Keep-Alive Heartbeat
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (wsRef.current?.readyState === WebSocket.OPEN) {
+                // Send a lightweight ping to keep the connection alive
+                const ping = createPingMessageV2();
+                wsRef.current.send(ping);
+            }
+        }, 15000); // 15 seconds (well under the 60s timeout)
+
+        return () => clearInterval(interval);
     }, []);
 
     const value = {
@@ -386,6 +462,7 @@ export function NitroliteProvider({ children }: { children: React.ReactNode }) {
         currentAllocations,
         logs,
         addLog,
+        reconnect,
         isConnected: status !== 'disconnected' && status !== 'connecting',
         isAuthenticated: status === 'authenticated' || status === 'session_active',
         isSessionActive: status === 'session_active',

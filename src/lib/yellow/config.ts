@@ -42,7 +42,7 @@ export const YELLOW_CONFIG = {
         '0x0996c2e70E4Eb633A95258D2699Cb965368A3CB6') as Address,
 
     // Application identifier
-    application: 'crush-eth-game',
+    application: 'nitrolite-demo',
 
     // Settlement chain (Base Sepolia)
     settlement: BASE_SEPOLIA_YELLOW,

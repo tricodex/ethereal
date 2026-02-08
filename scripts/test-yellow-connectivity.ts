@@ -8,12 +8,18 @@ const ws = new WebSocket(YELLOW_WS_URL);
 
 ws.on('open', () => {
     console.log('✅ Connection Opened!');
-    // Keep alive for a moment to receive any welcome messages
+
+    // Send a garbage JSON to trigger a response (expecting an error)
+    const payload = JSON.stringify({ jsonrpc: "2.0", method: "ping", id: 1 });
+    console.log(`📤 Sending: ${payload}`);
+    ws.send(payload);
+
+    // Keep alive
     setTimeout(() => {
-        console.log('Closing connection...');
+        console.log('Timeout reached. closing...');
         ws.close();
         process.exit(0);
-    }, 2000);
+    }, 5000);
 });
 
 ws.on('message', (data) => {
@@ -25,6 +31,6 @@ ws.on('error', (err) => {
     process.exit(1);
 });
 
-ws.on('close', () => {
-    console.log('Disconnected.');
+ws.on('close', (code, reason) => {
+    console.log(`Disconnected. Code: ${code}, Reason: ${reason}`);
 });
