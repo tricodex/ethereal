@@ -108,7 +108,7 @@ export function NitroliteProvider({ children }: { children: React.ReactNode }) {
     const handleMessage = useCallback((data: string) => {
         try {
             const message = parseAnyRPCResponse(data);
-            console.log("RX:", message);
+            console.log("RX:", JSON.stringify(message, null, 2));
 
             // Check if it's an error response
             if (message && typeof message === 'object' && 'error' in message) {
@@ -168,8 +168,8 @@ export function NitroliteProvider({ children }: { children: React.ReactNode }) {
                 }
 
                 if (method === 'error') {
-                    addLog(`❌ Server Error: ${JSON.stringify(params)}`);
-                    console.error("Server Error details:", params);
+                    addLog(`❌ Server Error: ${JSON.stringify(message)}`);
+                    console.error("Server Error details:", message);
                     return;
                 }
             }

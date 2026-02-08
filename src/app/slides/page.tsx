@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, Zap, Globe, Wallet, ExternalLink, MessageCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, Zap, Globe, Wallet, ExternalLink, MessageCircle, Clock } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 

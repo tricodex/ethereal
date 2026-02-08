@@ -1,6 +1,7 @@
 # Ethereal
 
 **Onboarding Grandma to Web3 through hyper-casual gaming.**
+![](public/media/game.png)
 
 Ethereal is a Match-3 game that demonstrates how complex blockchain infrastructure can be abstracted away from the user. It leverages **Yellow Network** for speed, **Arc & Circle** for liquidity, and **ENS** for identity.
 
