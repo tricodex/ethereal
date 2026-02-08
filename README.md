@@ -4,57 +4,57 @@
 
 CrushETH is a Match-3 game that demonstrates how complex blockchain infrastructure can be abstracted away from the user. It leverages **Yellow Network** for speed, **Arc & Circle** for liquidity, and **ENS** for identity.
 
-## 🏆 Hackathon Tracks & API Usage
+## Hackathon Tracks & API Usage
 
-### 1. Yellow Network ($15,000 Prize)
-**Goal**: "Integrate Yellow SDK to showcase instant, session-based transactions."
+### 1. Yellow Network
+**Goal**: Integrate Yellow SDK to showcase instant, session-based transactions.
 
-This project creates a "Speed Layer" where game moves happen off-chain via state channels, settling only when necessary.
+This project creates a Speed Layer where game moves happen off-chain via state channels, settling only when necessary.
 
-*   **Real SDK Integration**: Uses `@erc7824/nitrolite` to connect to the **ClearNet Sandbox**.
-*   **State Channels**: Every "Buy" action in the Yellow Market opens a cryptographically secure session.
-*   **Off-Chain Settlement**: Moves are signed instanty without gas.
+*   **SDK Integration**: Uses `@erc7824/nitrolite` to connect to the ClearNet Sandbox.
+*   **State Channels**: Every Buy action in the Yellow Market opens a cryptographically secure session.
+*   **Off-Chain Settlement**: Moves are signed instantly without gas.
 *   **On-Chain Finality**: The session result is settled to the `GameEscrow` contract on Arc.
 
 **Code References:**
-*   [`src/hooks/useNitrolite.ts`](src/hooks/useNitrolite.ts): Core hook handling WebSocket connection (`wss://clearnet-sandbox.yellow.com/ws`), session creation (`createAppSessionMessage`), and off-chain payments.
-*   [`src/app/yellow-market/page.tsx`](src/app/yellow-market/page.tsx): UI implementation showing real-time latency and session status.
-*   [`scripts/test-yellow-connectivity.ts`](scripts/test-yellow-connectivity.ts): Verification script proving connectivity to the Yellow Node.
+*   `src/hooks/useNitrolite.ts`: Core hook handling WebSocket connection (`wss://clearnet-sandbox.yellow.com/ws`), session creation (`createAppSessionMessage`), and off-chain payments.
+*   `src/app/yellow-market/page.tsx`: UI implementation showing real-time latency and session status.
+*   `scripts/test-yellow-connectivity.ts`: Verification script proving connectivity to the Yellow Node.
 
 ---
 
-### 2. Arc & Circle ($10,000 Prize)
-**Goal**: "Treat multiple chains as one liquidity surface using Arc."
+### 2. Arc & Circle
+**Goal**: Treat multiple chains as one liquidity surface using Arc.
 
-CrushETH treats Arc as the "Economic OS". Users from any chain (Arbitrum, Base, Sepolia) can play without manually bridging.
+CrushETH treats Arc as the Economic OS. Users from any chain (Arbitrum, Base, Sepolia) can play without manually bridging.
 
 *   **Liquidity Hub**: The game treasury (`GameEscrow.sol`) lives on Arc L1.
-*   **Circle Gateway**: Integrates the Cross-Chain Transfer Protocol (CCTP) to bridge USDC from user wallets (e.g. on Base) directly to the game's vault on Arc.
+*   **Circle Gateway**: Integrates the Cross-Chain Transfer Protocol (CCTP) to bridge USDC from user wallets directly to the game's vault on Arc.
 *   **Chain Abstraction**: The `GatewayDepositModal` detects the user's chain and routes liquidity automatically.
 
 **Code References:**
-*   [`src/hooks/useGateway.ts`](src/hooks/useGateway.ts): Implements `depositToGateway` and `transferToArc` using typed data signing (EIP-712) for CCTP burn intents.
-*   [`src/components/web3/GatewayDepositModal.tsx`](src/components/web3/GatewayDepositModal.tsx): UI that manages the cross-chain flow.
-*   [`contracts/GameEscrow.sol`](contracts/GameEscrow.sol): The solidity contract deployed on Arc Testnet (`0x0996c2e70E4Eb633A95258D2699Cb965368A3CB6`).
+*   `src/hooks/useGateway.ts`: Implements `depositToGateway` and `transferToArc` using typed data signing (EIP-712) for CCTP burn intents.
+*   `src/components/web3/GatewayDepositModal.tsx`: UI that manages the cross-chain flow.
+*   `contracts/GameEscrow.sol`: The solidity contract deployed on Arc Testnet (`0x0996c2e70E4Eb633A95258D2699Cb965368A3CB6`).
 
 ---
 
-### 3. ENS ($5,000 Prize)
-**Goal**: "Replace 0x addresses with human-readable names and social features."
+### 3. ENS
+**Goal**: Replace 0x addresses with human-readable names and social features.
 
-Identity is critical for casual games. An address like `0x71...` is scary; `grandma.eth` is friendly.
+Identity is critical for casual games. An address like `0x71...` is intimidating; `grandma.eth` is accessible.
 
 *   **Primary Name Resolution**: Automatically resolves the connected wallet's ENS name in the Header and Sidebar.
 *   **Avatar Integration**: Fetches and displays the ENS Avatar record (`text/avatar`) as the player's profile picture.
-*   **Social Context**: Used in the "Duel" and "Leaderboard" systems (simulated) to show who you are playing against.
+*   **Social Context**: Used in the Duel and Leaderboard systems used to show who you are playing against.
 
 **Code References:**
-*   [`src/components/layout/Header.tsx`](src/components/layout/Header.tsx): Implements `useEnsName` and `useEnsAvatar` for the main player profile.
-*   [`src/components/layout/Sidebar.tsx`](src/components/layout/Sidebar.tsx): Persistent identity display.
+*   `src/components/layout/Header.tsx`: Implements `useEnsName` and `useEnsAvatar` for the main player profile.
+*   `src/components/layout/Sidebar.tsx`: Persistent identity display.
 
 ---
 
-## 🏗️ Architecture
+## Architecture Declaration
 
 ```mermaid
 graph TD
@@ -104,7 +104,7 @@ graph TD
     GATEWAY -->|Bridge/Mint| ARC
 ```
 
-## 🚀 Getting Started
+## Getting Started
 
 1.  **Install Dependencies**:
     ```bash
@@ -124,12 +124,12 @@ graph TD
 4.  **Open in Browser**:
     Navigate to `http://localhost:3000`.
 
-## 📦 Tech Stack
+## Tech Stack (Verified)
 
-*   **Framework**: Next.js 14, React 18
-*   **Language**: TypeScript
-*   **Styling**: TailwindCSS, Framer Motion
-*   **Web3**: Wagmi, Viem, RainbowKit
+*   **Framework**: Next.js 16.1.6, React 19.2.3
+*   **Language**: TypeScript 5.x
+*   **Styling**: TailwindCSS 4, Framer Motion
+*   **Web3**: Wagmi 3.4.2, Viem 2.45.1, RainbowKit
 *   **Protocol SDKs**:
-    *   `@erc7824/nitrolite` (Yellow)
+    *   `@erc7824/nitrolite` ^0.5.3 (Yellow)
     *   Circle CCTP (Arc)
