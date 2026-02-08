@@ -46,7 +46,7 @@ Identity is critical for casual games. An address like `0x71...` is intimidating
 
 *   **Primary Name Resolution**: Automatically resolves the connected wallet's ENS name in the Header and Sidebar.
 *   **Avatar Integration**: Fetches and displays the ENS Avatar record (`text/avatar`) as the player's profile picture.
-*   **Social Context**: Used in the Duel and Leaderboard systems used to show who you are playing against.
+*   **Social Context**: The Sidebar uses real ENS resolution to show your identity. The Leaderboard page demonstrates how this identity layer would look in a global context.
 
 **Code References:**
 *   `src/components/layout/Header.tsx`: Implements `useEnsName` and `useEnsAvatar` for the main player profile.
