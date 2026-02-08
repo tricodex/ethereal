@@ -1,50 +1,172 @@
 import { useState, useRef, useCallback } from 'react';
-import { createAppSessionMessage, parseAnyRPCResponse } from '@erc7824/nitrolite';
+import {
+    createAuthRequestMessage,
+    createAuthVerifyMessage,
+    createAppSessionMessage,
+    createSubmitAppStateMessage,
+    createCloseAppSessionMessage,
+    parseAnyRPCResponse,
+    RPCProtocolVersion,
+    RPCAppStateIntent,
+    type RPCAppSessionAllocation,
+    type RPCAppDefinition,
+    type MessageSigner,
+    type RPCData,
+} from '@erc7824/nitrolite';
 import { useAccount, useWalletClient } from 'wagmi';
+import { type Hex, type Address, toHex } from 'viem';
 
-// Sandbox Endpoint
+// Yellow Network Sandbox Endpoint
 const YELLOW_WS_URL = 'wss://clearnet-sandbox.yellow.com/ws';
 // Game House Address (The entity receiving payments)
-const HOUSE_ADDRESS = "0x0996c2e70E4Eb633A95258D2699Cb965368A3CB6";
+const HOUSE_ADDRESS = "0x0996c2e70E4Eb633A95258D2699Cb965368A3CB6" as Address;
+// Application identifier
+const APPLICATION = "crush-eth-game";
 
 export function useNitrolite() {
     const { address } = useAccount();
     const { data: walletClient } = useWalletClient();
     const wsRef = useRef<WebSocket | null>(null);
 
-    const [status, setStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
-    const [sessionId, setSessionId] = useState<string | null>(null);
+    const [status, setStatus] = useState<'disconnected' | 'connecting' | 'authenticated' | 'session_active'>('disconnected');
+    const [sessionId, setSessionId] = useState<Hex | null>(null);
+    const [stateVersion, setStateVersion] = useState(0);
     const [logs, setLogs] = useState<string[]>([]);
+    // Track current allocations for state updates
+    const [currentAllocations, setCurrentAllocations] = useState<RPCAppSessionAllocation[]>([]);
 
     const addLog = (msg: string) => setLogs(prev => [msg, ...prev].slice(0, 50));
 
-    // Connect to Web Socket
-    const connect = useCallback(() => {
+    // Message signer for SDK functions - signs RPCData payload
+    const createSigner = useCallback((): MessageSigner | null => {
+        if (!walletClient) return null;
+        return async (payload: RPCData): Promise<Hex> => {
+            // Convert RPCData to string for signing (matching SDK's ECDSA signer approach)
+            const message = toHex(JSON.stringify(payload, (_, v) =>
+                (typeof v === 'bigint' ? v.toString() : v)
+            ));
+            return await walletClient.signMessage({ message });
+        };
+    }, [walletClient]);
+
+    // Handle incoming WebSocket messages
+    const handleMessage = useCallback((data: string) => {
+        try {
+            const message = parseAnyRPCResponse(data);
+            console.log("RX:", message);
+
+            // Check if it's an error response
+            if (message && typeof message === 'object' && 'error' in message) {
+                addLog(`❌ Error: ${JSON.stringify(message.error)}`);
+                return;
+            }
+
+            // Handle different response types based on result
+            if (message && typeof message === 'object' && 'result' in message) {
+                const result = message.result as any;
+
+                // Auth challenge response
+                if (result?.challenge) {
+                    addLog(`🔐 Auth challenge received`);
+                    handleAuthVerify(result);
+                    return;
+                }
+
+                // Session created response
+                if (result?.app_session_id) {
+                    setSessionId(result.app_session_id);
+                    setStateVersion(0);
+                    setStatus('session_active');
+                    addLog(`✅ Session Created: ${result.app_session_id.slice(0, 10)}...`);
+                    return;
+                }
+
+                // State update acknowledgment
+                if (result?.version !== undefined) {
+                    setStateVersion(result.version);
+                    addLog(`📊 State v${result.version} confirmed`);
+                    return;
+                }
+
+                // Session closed
+                if (result?.closed || result?.status === 'closed') {
+                    addLog(`✅ Session Closed Successfully`);
+                    setSessionId(null);
+                    setStatus('authenticated');
+                    return;
+                }
+
+                // Generic success
+                addLog(`✓ RPC OK`);
+            }
+        } catch (e) {
+            console.error("Parse error", e);
+            addLog(`⚠️ Parse error: ${e}`);
+        }
+    }, []);
+
+    // Handle auth verification after receiving challenge
+    const handleAuthVerify = useCallback(async (challengeResponse: any) => {
+        const signer = createSigner();
+        if (!signer || !wsRef.current) return;
+
+        try {
+            addLog("🔐 Verifying auth...");
+            const verifyMessage = await createAuthVerifyMessage(signer, challengeResponse);
+            wsRef.current.send(verifyMessage);
+            setStatus('authenticated');
+            addLog("✅ Authenticated with Yellow Network");
+        } catch (e: any) {
+            addLog(`❌ Auth verify failed: ${e.message}`);
+        }
+    }, [createSigner]);
+
+    // Connect to WebSocket and authenticate
+    const connect = useCallback(async () => {
+        if (!address || !walletClient) {
+            addLog("❌ Wallet not connected");
+            return;
+        }
+
         if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
         setStatus('connecting');
-        addLog(`Connecting to ${YELLOW_WS_URL}...`);
+        addLog(`Connecting to Yellow Network...`);
 
         const ws = new WebSocket(YELLOW_WS_URL);
         wsRef.current = ws;
 
-        ws.onopen = () => {
-            setStatus('connected');
-            addLog('✅ Connected to Yellow Network (Sandbox)');
+        ws.onopen = async () => {
+            addLog('✅ WebSocket Connected');
+
+            // Start authentication flow
+            try {
+                const authMessage = await createAuthRequestMessage({
+                    address: address as Address,
+                    session_key: address as Address, // Using main wallet as session key for simplicity
+                    application: APPLICATION,
+                    allowances: [
+                        { asset: 'usdc', amount: '10000000' }, // 10 USDC allowance
+                    ],
+                    expires_at: BigInt(Math.floor(Date.now() / 1000) + 86400), // 24 hours
+                    scope: 'game',
+                });
+
+                ws.send(authMessage);
+                addLog("📤 Auth request sent");
+            } catch (e: any) {
+                addLog(`❌ Auth request failed: ${e.message}`);
+            }
         };
 
         ws.onmessage = (event) => {
-            try {
-                const message = parseAnyRPCResponse(event.data);
-                handleMessage(message);
-            } catch (e) {
-                console.error("Parse error", e);
-            }
+            handleMessage(event.data);
         };
 
         ws.onclose = () => {
             setStatus('disconnected');
-            // addLog('Disconnected from Yellow');
+            setSessionId(null);
+            addLog('WebSocket Disconnected');
         };
 
         ws.onerror = (err) => {
@@ -52,119 +174,151 @@ export function useNitrolite() {
             setStatus('disconnected');
             addLog('❌ Connection Error');
         };
-    }, []);
+    }, [address, walletClient, handleMessage]);
 
-    const handleMessage = (message: any) => {
-        console.log("RX:", message);
-
-        switch (message.type) {
-            case 'session_created':
-                setSessionId(message.sessionId);
-                addLog(`✅ Session Confirmed: ${message.sessionId.slice(0, 10)}...`);
-                break;
-            case 'payment':
-                addLog(`💰 Payment RX: ${message.amount}`);
-                break;
-            case 'error':
-                addLog(`❌ Error: ${message.error || JSON.stringify(message)}`);
-                break;
-            default:
-                if (message.result) {
-                    // generic RPC success
-                    addLog(`RPC OK: ${JSON.stringify(message.result)}`);
-                }
-        }
-    };
-
-    // Create Session
-    const createSession = async () => {
-        if (!walletClient || !address || status !== 'connected') {
-            addLog("❌ Wallet or WS not ready");
+    // Create App Session (after authentication)
+    const createSession = useCallback(async () => {
+        const signer = createSigner();
+        if (!signer || !address || !wsRef.current || status !== 'authenticated') {
+            addLog("❌ Not authenticated or wallet not ready");
             return;
         }
 
         try {
             addLog("Creating App Session...");
 
-            // 1. Define App (Payment V1)
-            const appDefinition = {
-                application: HOUSE_ADDRESS as `0x${string}`, // Required by SDK type
-                protocol: 'payment-app-v1' as const, // Strict type
-                participants: [address, HOUSE_ADDRESS],
+            // Define the app session
+            const definition: RPCAppDefinition = {
+                application: HOUSE_ADDRESS,
+                protocol: RPCProtocolVersion.NitroRPC_0_4,
+                participants: [address as Hex, HOUSE_ADDRESS as Hex],
                 weights: [50, 50],
-                quorum: 100, // Unanimous consent required
+                quorum: 100, // Unanimous consent
                 challenge: 0,
-                nonce: Date.now()
+                nonce: Date.now(),
             };
 
-            // 2. Define Allocations (Initial State)
-            const allocations = [
-                { participant: address as `0x${string}`, asset: 'usdc', amount: '800000' }, // 0.8 USDC
-                { participant: HOUSE_ADDRESS as `0x${string}`, asset: 'usdc', amount: '200000' } // 0.2 USDC
+            // Initial allocations (player deposits 0.8 USDC, house has 0.2 USDC)
+            const allocations: RPCAppSessionAllocation[] = [
+                { participant: address as Address, asset: 'usdc', amount: '800000' }, // 0.8 USDC
+                { participant: HOUSE_ADDRESS, asset: 'usdc', amount: '200000' },      // 0.2 USDC
             ];
 
-            // 3. Authenticate & Sign
-            // Nitrolite implies we sign the session message
-            // We use walletClient to sign
-            const messageSigner = async (msg: any) => {
-                const messageString = typeof msg === 'string' ? msg : JSON.stringify(msg);
-                return await walletClient.signMessage({ message: messageString });
-            };
+            // Save initial allocations for state tracking
+            setCurrentAllocations(allocations);
 
-            const sessionMessage = await createAppSessionMessage(
-                messageSigner as any,
-                { definition: appDefinition as any, allocations }
-            );
+            const sessionMessage = await createAppSessionMessage(signer, {
+                definition,
+                allocations,
+            });
 
-            // 4. Send
-            wsRef.current?.send(sessionMessage);
-            addLog("📤 Sent Session Create Request");
+            wsRef.current.send(sessionMessage);
+            addLog("📤 Session create request sent");
 
         } catch (e: any) {
             console.error(e);
-            addLog(`❌ Session Create Failed: ${e.message}`);
+            addLog(`❌ Session create failed: ${e.message}`);
         }
-    };
+    }, [address, status, createSigner]);
 
-    const sendPayment = async (amount: bigint) => {
-        if (!walletClient || !address || !sessionId) {
-            addLog("❌ Check session or wallet");
+    // Send payment via state channel (proper SDK state update)
+    const sendPayment = useCallback(async (amount: bigint) => {
+        const signer = createSigner();
+        if (!signer || !address || !sessionId || !wsRef.current) {
+            addLog("❌ Session not active");
             return;
         }
 
         try {
-            const paymentData = {
-                type: 'payment',
-                amount: amount.toString(),
-                recipient: HOUSE_ADDRESS,
-                timestamp: Date.now(),
-                sessionId: sessionId // Include session context
-            };
+            // Calculate new allocations (transfer from player to house)
+            const amountStr = amount.toString();
+            const playerAmount = BigInt(currentAllocations[0]?.amount || '800000') - amount;
+            const houseAmount = BigInt(currentAllocations[1]?.amount || '200000') + amount;
 
-            // Sign
-            const signature = await walletClient.signMessage({ message: JSON.stringify(paymentData) });
+            const newAllocations: RPCAppSessionAllocation[] = [
+                { participant: address as Address, asset: 'usdc', amount: playerAmount.toString() },
+                { participant: HOUSE_ADDRESS, asset: 'usdc', amount: houseAmount.toString() },
+            ];
 
-            const payload = JSON.stringify({
-                ...paymentData,
-                signature,
-                sender: address
-            });
+            const newVersion = stateVersion + 1;
 
-            wsRef.current?.send(payload);
-            addLog(`💸 Sending Payment: ${amount.toString()} (Off-Chain)`);
+            // Create state update using SDK
+            const stateMessage = await createSubmitAppStateMessage<typeof RPCProtocolVersion.NitroRPC_0_4>(
+                signer,
+                {
+                    app_session_id: sessionId,
+                    intent: RPCAppStateIntent.Operate,
+                    version: newVersion,
+                    allocations: newAllocations,
+                }
+            );
+
+            wsRef.current.send(stateMessage);
+
+            // Optimistically update local state
+            setCurrentAllocations(newAllocations);
+            setStateVersion(newVersion);
+
+            addLog(`💸 Payment: ${amountStr} units (v${newVersion})`);
 
         } catch (e: any) {
-            addLog(`❌ Payment Failed: ${e.message}`);
+            addLog(`❌ Payment failed: ${e.message}`);
         }
-    };
+    }, [address, sessionId, stateVersion, currentAllocations, createSigner]);
+
+    // Close session and prepare for on-chain settlement
+    const closeSession = useCallback(async (): Promise<{ allocations: RPCAppSessionAllocation[] } | null> => {
+        const signer = createSigner();
+        if (!signer || !sessionId || !wsRef.current) {
+            addLog("❌ No active session to close");
+            return null;
+        }
+
+        try {
+            addLog("Closing session...");
+
+            const closeMessage = await createCloseAppSessionMessage(signer, {
+                app_session_id: sessionId,
+                allocations: currentAllocations,
+            });
+
+            wsRef.current.send(closeMessage);
+            addLog("📤 Close request sent");
+
+            // Return final allocations for on-chain settlement
+            return { allocations: currentAllocations };
+
+        } catch (e: any) {
+            addLog(`❌ Close failed: ${e.message}`);
+            return null;
+        }
+    }, [sessionId, currentAllocations, createSigner]);
+
+    // Disconnect WebSocket
+    const disconnect = useCallback(() => {
+        if (wsRef.current) {
+            wsRef.current.close();
+            wsRef.current = null;
+        }
+        setStatus('disconnected');
+        setSessionId(null);
+        setCurrentAllocations([]);
+    }, []);
 
     return {
         connect,
         createSession,
         sendPayment,
+        closeSession,
+        disconnect,
         status,
         sessionId,
+        stateVersion,
+        currentAllocations,
         logs,
-        addLog // Expose for manual logging if needed
+        addLog,
+        isConnected: status !== 'disconnected' && status !== 'connecting',
+        isAuthenticated: status === 'authenticated' || status === 'session_active',
+        isSessionActive: status === 'session_active',
     };
 }

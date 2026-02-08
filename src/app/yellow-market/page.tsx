@@ -1,73 +1,61 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useGameStore } from "@/store/gameStore";
 import { ArrowLeft, Zap, ShoppingCart, CheckCircle, Clock } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
-import { useSignMessage, useSendTransaction } from "wagmi";
-import { parseEther, encodeFunctionData } from "viem";
 import { useNitrolite } from "@/hooks/useNitrolite"; // Real SDK Hook
 
 export default function YellowMarketPage() {
-  const { 
-      connect, 
-      createSession, 
-      sendPayment, 
-      status: networkStatus, 
-      sessionId, 
-      logs: nitroLogs 
+  const {
+      connect,
+      createSession,
+      sendPayment,
+      closeSession,
+      status: networkStatus,
+      sessionId,
+      stateVersion,
+      currentAllocations,
+      logs: nitroLogs,
+      isAuthenticated,
+      isSessionActive,
   } = useNitrolite();
-  
+
   const [isSettling, setIsSettling] = useState(false);
   const { addGold } = useGameStore();
-  const { signMessageAsync } = useSignMessage();
-  const { sendTransactionAsync } = useSendTransaction();
 
   // Combine logs mainly from Nitrolite
   const logs = nitroLogs;
 
-  const handleConnect = async () => {
-      connect();
-      // Auto-create session once connected (delayed slightly to ensure socket open)
-      setTimeout(() => {
+  // Auto-create session once authenticated
+  useEffect(() => {
+      if (isAuthenticated && !isSessionActive) {
           createSession();
-      }, 1000);
+      }
+  }, [isAuthenticated, isSessionActive, createSession]);
+
+  const handleConnect = async () => {
+      await connect();
   };
 
   const handleSettle = async () => {
       try {
           setIsSettling(true);
-          
+
           if (!sessionId) return;
 
-          // 1. Sign Close Intent (Channel Closing Proof)
-          // This signature authorizes the final balance update on the Yellow Node
-          const signature = await signMessageAsync({ message: `Yellow Network: Close Channel ${sessionId}\nFinal Balance: 5000 Gold` });
-          
-          // 2. Submit to Arc GameEscrow
-          // Calling settleSession(bytes32 sessionId, uint256 finalBalance, bytes signature)
-          const sessionBytes32 = sessionId.padEnd(66, '0').slice(0, 66) as `0x${string}`;
-          
-          await sendTransactionAsync({
-              to: process.env.NEXT_PUBLIC_GAME_ESCROW_ADDRESS as `0x${string}`, // Use ENV var
-              data: encodeFunctionData({
-                abi: [{
-                    name: 'settleSession',
-                    type: 'function',
-                    inputs: [
-                        { type: 'bytes32', name: 'sessionId' },
-                        { type: 'uint256', name: 'finalBalance' },
-                        { type: 'bytes', name: 'signature' }
-                    ],
-                    outputs: []
-                }],
-                functionName: 'settleSession',
-                args: [sessionBytes32, 5000n, signature]
-              })
-          });
-          
+          // Use SDK's closeSession to properly close the channel
+          // This creates a properly signed close message using the SDK
+          const result = await closeSession();
+
+          if (result) {
+              // The session is now closed via the SDK
+              // Final allocations are returned for optional on-chain settlement
+              console.log("Session closed. Final allocations:", result.allocations);
+          }
+
       } catch (err) {
           console.error("Settlement Failed:", err);
       } finally {
@@ -76,12 +64,22 @@ export default function YellowMarketPage() {
   };
 
   const handlePurchase = async (item: string, cost: number) => {
-      // Send 100,000 units (mock logic for 0.1 USDC etc)
-      await sendPayment(100000n);
-      addGold(5000); // Give 5000 gold flat for demo or calculate based on item
+      // Convert cost to USDC units (6 decimals)
+      // e.g., $0.99 = 990000 units
+      const amountUnits = BigInt(Math.floor(cost * 1000000));
+      await sendPayment(amountUnits);
+
+      // Give gold based on item (simplified for demo)
+      const goldAmounts: Record<string, number> = {
+          "Rocket Pack": 500,
+          "Infinite Lives": 2000,
+          "Gold Chest (5k)": 5000,
+          "Mystery Box": Math.floor(Math.random() * 1000) + 100,
+      };
+      addGold(goldAmounts[item] || 500);
   };
 
-  const sessionActive = networkStatus === 'connected' && !!sessionId;
+  const sessionActive = isSessionActive && !!sessionId;
 
   return (
     <div className="min-h-screen bg-black text-white p-8 font-sans relative overflow-hidden">

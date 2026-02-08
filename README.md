@@ -10,9 +10,14 @@ CrushETH is a Match-3 game that demonstrates how complex blockchain infrastructu
 **Goal**: Integrate Yellow SDK for instant, session-based transactions.
 
 *   **Requirement**: "Use the Yellow SDK / Nitrolite protocol"
-    *   **Implementation**: Uses `@erc7824/nitrolite` to connect to the ClearNet Sandbox. See `src/hooks/useNitrolite.ts:L22-55`.
+    *   **Implementation**: Fully implemented using `@erc7824/nitrolite`.
+        *   **Auth**: `createAuthRequestMessage` & `createAuthVerifyMessage`
+        *   **Session**: `createAppSessionMessage`
+        *   **State**: `createSubmitAppStateMessage` (v4)
+        *   **Close**: `createCloseAppSessionMessage`
+    *   See `src/hooks/useNitrolite.ts`.
 *   **Requirement**: "Demonstrate off-chain transaction logic"
-    *   **Implementation**: Every purchase is signed off-chain (0 gas, <50ms). See `src/hooks/useNitrolite.ts:L128-158`.
+    *   **Implementation**: Every purchase triggers a state update signed by the user's session key.
 *   **Requirement**: "Show on-chain settlement"
     *   **Implementation**: The session is finalized by calling `GameEscrow.settleSession` on Arc L1 with the session signature. See `contracts/src/GameEscrow.sol:L77-84`.
 

@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useYellowChannel } from "@/hooks/useYellowChannel";
+import { useNitrolite } from "@/hooks/useNitrolite";
 import { Zap } from "lucide-react";
 
 export const YellowStatus = () => {
-    const { session } = useYellowChannel();
-    const isActive = session?.status === 'active';
+    const { isSessionActive, sessionId, stateVersion } = useNitrolite();
 
-    if (isActive) {
+    if (isSessionActive && sessionId) {
         return (
             <Link href="/yellow-market" className="flex items-center gap-2 px-3 py-1 bg-yellow-500/20 border border-yellow-500 rounded-lg hover:bg-yellow-500/30 transition-all group animate-pulse">
                 <div className="w-5 h-5 rounded-full bg-yellow-500 flex items-center justify-center">
@@ -16,7 +15,7 @@ export const YellowStatus = () => {
                 </div>
                 <div className="flex flex-col leading-none">
                     <span className="text-yellow-500 font-black text-[10px] uppercase tracking-wider">SESSION ACTIVE</span>
-                    <span className="text-yellow-300/80 text-[8px] font-mono">CHANNEL OPEN</span>
+                    <span className="text-yellow-300/80 text-[8px] font-mono">v{stateVersion} • {sessionId.slice(0, 6)}...</span>
                 </div>
             </Link>
         );
