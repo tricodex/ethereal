@@ -14,6 +14,7 @@ export default function YellowMarketPage() {
       createSession,
       sendPayment,
       closeSession,
+      depositToCustody,
       status: networkStatus,
       sessionId,
       stateVersion,
@@ -24,20 +25,39 @@ export default function YellowMarketPage() {
   } = useNitrolite();
 
   const [isSettling, setIsSettling] = useState(false);
+  const [isDepositing, setIsDepositing] = useState(false);
+  const [depositAmount, setDepositAmount] = useState('1.0');
   const { addGold } = useGameStore();
 
   // Combine logs mainly from Nitrolite
   const logs = nitroLogs;
 
-  // Auto-create session once authenticated
-  useEffect(() => {
-      if (isAuthenticated && !isSessionActive) {
-          createSession();
-      }
-  }, [isAuthenticated, isSessionActive, createSession]);
-
   const handleConnect = async () => {
       await connect();
+  };
+
+  const handleDeposit = async () => {
+      if (!depositAmount || isNaN(Number(depositAmount))) return;
+      setIsDepositing(true);
+      try {
+          // Convert to USDC units (6 decimals)
+          const amountUnits = BigInt(Math.floor(parseFloat(depositAmount) * 1000000));
+          const tx = await depositToCustody(amountUnits);
+          if (tx) {
+              // Automatically move to create session after successful deposit (in a real app, wait for confirmation)
+              // For now, we simulate the flow continuing
+          }
+      } catch (e) {
+          console.error(e);
+      } finally {
+          setIsDepositing(false);
+      }
+  };
+
+  const handleCreateSession = async () => {
+      // Use the deposited amount for session creation
+      const amountUnits = BigInt(Math.floor(parseFloat(depositAmount) * 1000000));
+      await createSession(amountUnits);
   };
 
   const handleSettle = async () => {
@@ -47,12 +67,9 @@ export default function YellowMarketPage() {
           if (!sessionId) return;
 
           // Use SDK's closeSession to properly close the channel
-          // This creates a properly signed close message using the SDK
           const result = await closeSession();
 
           if (result) {
-              // The session is now closed via the SDK
-              // Final allocations are returned for optional on-chain settlement
               console.log("Session closed. Final allocations:", result.allocations);
           }
 
@@ -65,7 +82,6 @@ export default function YellowMarketPage() {
 
   const handlePurchase = async (item: string, cost: number) => {
       // Convert cost to USDC units (6 decimals)
-      // e.g., $0.99 = 990000 units
       const amountUnits = BigInt(Math.floor(cost * 1000000));
       await sendPayment(amountUnits);
 
@@ -80,6 +96,91 @@ export default function YellowMarketPage() {
   };
 
   const sessionActive = isSessionActive && !!sessionId;
+
+  // Determine which UI stage to show in the control panel
+  const renderControlPanel = () => {
+      if (sessionActive) {
+          return (
+              <div className="space-y-4">
+                  <div className="flex items-center gap-3 p-3 bg-green-500/10 border border-green-500/20 rounded-xl">
+                      <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                      <span className="text-green-500 font-bold text-xs">CHANNEL ACTIVE</span>
+                  </div>
+                  <div className="text-xs font-mono text-gray-400 space-y-2">
+                      <div className="flex justify-between">
+                          <span>Latency</span>
+                          <span className="text-white">~12ms</span>
+                      </div>
+                      <div className="flex justify-between">
+                          <span>Session</span>
+                          <span className="text-white">{sessionId ? sessionId.slice(0,8) + '...' : 'Pending...'}</span>
+                      </div>
+                      <div className="flex justify-between border-t border-white/5 pt-2">
+                          <span>Settlement</span>
+                          <span className="text-[var(--neon-blue)] font-bold">Base Sepolia</span>
+                      </div>
+                  </div>
+                  <button 
+                      onClick={handleSettle}
+                      disabled={isSettling}
+                      className="w-full py-2 bg-[var(--neon-blue)]/10 hover:bg-[var(--neon-blue)]/20 text-[var(--neon-blue)] border border-[var(--neon-blue)]/50 rounded-lg text-xs font-bold transition-all disabled:opacity-50"
+                  >
+                      {isSettling ? "Settling..." : "Close Channel"}
+                  </button>
+              </div>
+          );
+      }
+
+      if (!isAuthenticated) {
+           return (
+              <div className="text-center py-8 space-y-4">
+                  <div className="w-16 h-16 rounded-full border-4 border-dashed border-gray-700 mx-auto animate-spin-slow" />
+                  <p className="text-xs text-gray-500">Not Connected</p>
+                  <button 
+                      onClick={handleConnect}
+                      className="w-full py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(234,179,8,0.2)]"
+                  >
+                      Connect to Yellow
+                  </button>
+              </div>
+           );
+      }
+
+      // Authenticated but no session: Show Deposit/Start Flow
+      return (
+          <div className="space-y-4">
+              <div className="p-3 bg-white/5 rounded-xl space-y-3">
+                  <label className="text-xs text-gray-400 block">1. Deposit USDC (Base Sepolia)</label>
+                  <div className="flex gap-2">
+                      <input 
+                          type="number" 
+                          value={depositAmount}
+                          onChange={(e) => setDepositAmount(e.target.value)}
+                          className="w-20 bg-black/50 border border-white/10 rounded-lg px-2 py-1 text-sm text-center"
+                      />
+                      <button 
+                          onClick={handleDeposit}
+                          disabled={isDepositing}
+                          className="flex-1 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-lg transition-colors border border-white/5"
+                      >
+                          {isDepositing ? "Depositing..." : "Deposit to Custody"}
+                      </button>
+                  </div>
+              </div>
+
+              <div className="p-3 bg-white/5 rounded-xl space-y-3 opacity-100">
+                  <label className="text-xs text-gray-400 block">2. Start Session</label>
+                  <button 
+                      onClick={handleCreateSession}
+                      disabled={isDepositing} // Wait for deposit
+                      className="w-full py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg transition-all shadow-[0_0_10px_rgba(234,179,8,0.2)]"
+                  >
+                      Open Channel
+                  </button>
+              </div>
+          </div>
+      );
+  };
 
   return (
     <div className="min-h-screen bg-black text-white p-8 font-sans relative overflow-hidden">
@@ -108,47 +209,7 @@ export default function YellowMarketPage() {
                     <h3 className="text-lg font-bold text-gray-200 mb-4 flex items-center gap-2">
                         State Channel Status
                     </h3>
-                    
-                    {!sessionActive ? (
-                        <div className="text-center py-8 space-y-4">
-                            <div className="w-16 h-16 rounded-full border-4 border-dashed border-gray-700 mx-auto animate-spin-slow" />
-                            <p className="text-xs text-gray-500">Channel Closed</p>
-                            <button 
-                                onClick={handleConnect}
-                                className="w-full py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(234,179,8,0.2)]"
-                            >
-                                Open Channel
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3 p-3 bg-green-500/10 border border-green-500/20 rounded-xl">
-                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                <span className="text-green-500 font-bold text-xs">CHANNEL ACTIVE</span>
-                            </div>
-                            <div className="text-xs font-mono text-gray-400 space-y-2">
-                                <div className="flex justify-between">
-                                    <span>Latency</span>
-                                    <span className="text-white">~12ms</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span>Session</span>
-                                    <span className="text-white">{sessionId ? sessionId.slice(0,8) + '...' : 'Pending...'}</span>
-                                </div>
-                                <div className="flex justify-between border-t border-white/5 pt-2">
-                                    <span>Settlement</span>
-                                    <span className="text-[var(--neon-blue)] font-bold">Arc L1</span>
-                                </div>
-                            </div>
-                            <button 
-                                onClick={handleSettle}
-                                disabled={isSettling}
-                                className="w-full py-2 bg-[var(--neon-blue)]/10 hover:bg-[var(--neon-blue)]/20 text-[var(--neon-blue)] border border-[var(--neon-blue)]/50 rounded-lg text-xs font-bold transition-all disabled:opacity-50"
-                            >
-                                {isSettling ? "Settling..." : "Settle to Arc"}
-                            </button>
-                        </div>
-                    )}
+                    {renderControlPanel()}
                 </div>
 
                 {/* Live Logs */}
@@ -213,7 +274,7 @@ export default function YellowMarketPage() {
                     <div>
                         <h4 className="text-white font-bold text-lg">Settlement Info</h4>
                         <p className="text-sm text-gray-400 mt-1 max-w-md">
-                            All purchases are signed off-chain. Balance is locked in the GameEscrow contract and only settled when you close the channel.
+                            All purchases are signed off-chain. Balance is locked in the Smart Contract on Base Sepolia and only settled when you close the channel.
                         </p>
                     </div>
                 </div>

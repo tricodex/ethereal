@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CrushETH - Crypto Match-3",
+  title: "Ethereal - Crypto Match-3",
   description: "Play Match-3, Wager USDC, Win Big.",
 };
 

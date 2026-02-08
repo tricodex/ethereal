@@ -12,20 +12,22 @@ import {
     type RPCAppDefinition,
     type MessageSigner,
     type RPCData,
+    NitroliteClient,
+    WalletStateSigner,
 } from '@erc7824/nitrolite';
-import { useAccount, useWalletClient } from 'wagmi';
+import { useAccount, useWalletClient, usePublicClient } from 'wagmi';
 import { type Hex, type Address, toHex } from 'viem';
+import { YELLOW_CONFIG, BASE_SEPOLIA_YELLOW } from '@/lib/yellow/config';
 
-// Yellow Network Sandbox Endpoint
-const YELLOW_WS_URL = 'wss://clearnet-sandbox.yellow.com/ws';
-// Game House Address (The entity receiving payments)
-const HOUSE_ADDRESS = "0x0996c2e70E4Eb633A95258D2699Cb965368A3CB6" as Address;
-// Application identifier
-const APPLICATION = "crush-eth-game";
+// Use centralized config
+const YELLOW_WS_URL = YELLOW_CONFIG.wsUrl;
+const HOUSE_ADDRESS = YELLOW_CONFIG.houseAddress;
+const APPLICATION = YELLOW_CONFIG.application;
 
 export function useNitrolite() {
     const { address } = useAccount();
     const { data: walletClient } = useWalletClient();
+    const publicClient = usePublicClient();
     const wsRef = useRef<WebSocket | null>(null);
 
     const [status, setStatus] = useState<'disconnected' | 'connecting' | 'authenticated' | 'session_active'>('disconnected');
@@ -176,8 +178,45 @@ export function useNitrolite() {
         };
     }, [address, walletClient, handleMessage]);
 
-    // Create App Session (after authentication)
-    const createSession = useCallback(async () => {
+    // Deposit to Yellow Custody on Base Sepolia
+    const depositToCustody = useCallback(async (amount: bigint) => {
+        if (!walletClient || !publicClient || !address) {
+            addLog("❌ Wallet not ready for deposit");
+            return null;
+        }
+
+        try {
+            addLog(`💰 Depositing ${amount.toString()} USDC to Custody...`);
+
+            const stateSigner = new WalletStateSigner(walletClient);
+            const client = new NitroliteClient({
+                publicClient: publicClient as any, // Cast/Ensure compatibility
+                walletClient: walletClient as any,
+                stateSigner,
+                addresses: {
+                    adjudicator: BASE_SEPOLIA_YELLOW.adjudicator,
+                    custody: BASE_SEPOLIA_YELLOW.custody,
+                },
+                chainId: BASE_SEPOLIA_YELLOW.chainId,
+                challengeDuration: 60n, // 1 minute for testnet
+            });
+
+            // client.deposit handles approve + deposit logic internally if implemented,
+            // or we might need to approve manually first. Assuming client.deposit does standard checks.
+            const txHash = await client.deposit(BASE_SEPOLIA_YELLOW.usdc, amount);
+
+            addLog(`✅ Deposit Tx: ${txHash.slice(0, 10)}...`);
+            return txHash;
+
+        } catch (e: any) {
+            console.error(e);
+            addLog(`❌ Deposit failed: ${e.message}`);
+            return null;
+        }
+    }, [walletClient, publicClient, address]);
+
+    // Create App Session (after authentication + deposit)
+    const createSession = useCallback(async (depositAmount: bigint = 800000n) => {
         const signer = createSigner();
         if (!signer || !address || !wsRef.current || status !== 'authenticated') {
             addLog("❌ Not authenticated or wallet not ready");
@@ -198,10 +237,11 @@ export function useNitrolite() {
                 nonce: Date.now(),
             };
 
-            // Initial allocations (player deposits 0.8 USDC, house has 0.2 USDC)
+            // Allocations based on deposit
+            // Player gets what they deposited. House gets a base liquidity (e.g., 0.2 USDC or matching)
             const allocations: RPCAppSessionAllocation[] = [
-                { participant: address as Address, asset: 'usdc', amount: '800000' }, // 0.8 USDC
-                { participant: HOUSE_ADDRESS, asset: 'usdc', amount: '200000' },      // 0.2 USDC
+                { participant: address as Address, asset: 'usdc', amount: depositAmount.toString() },
+                { participant: HOUSE_ADDRESS, asset: 'usdc', amount: '200000' }, // House liquidity
             ];
 
             // Save initial allocations for state tracking
@@ -232,8 +272,13 @@ export function useNitrolite() {
         try {
             // Calculate new allocations (transfer from player to house)
             const amountStr = amount.toString();
-            const playerAmount = BigInt(currentAllocations[0]?.amount || '800000') - amount;
-            const houseAmount = BigInt(currentAllocations[1]?.amount || '200000') + amount;
+            const playerAmount = BigInt(currentAllocations[0]?.amount || '0') - amount;
+            const houseAmount = BigInt(currentAllocations[1]?.amount || '0') + amount;
+
+            if (playerAmount < 0n) {
+                addLog("❌ Insufficient channel balance");
+                return;
+            }
 
             const newAllocations: RPCAppSessionAllocation[] = [
                 { participant: address as Address, asset: 'usdc', amount: playerAmount.toString() },
@@ -311,6 +356,7 @@ export function useNitrolite() {
         sendPayment,
         closeSession,
         disconnect,
+        depositToCustody, // New function
         status,
         sessionId,
         stateVersion,

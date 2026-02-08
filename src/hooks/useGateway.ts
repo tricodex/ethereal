@@ -7,6 +7,7 @@ import {
     GATEWAY_CONFIG,
     SUPPORTED_CHAINS,
     arcContracts,
+    baseContracts,
     type ChainConfig,
 } from '@/lib/gateway/contracts';
 
@@ -86,6 +87,7 @@ interface UseGatewayReturn {
     fetchBalances: () => Promise<void>;
     depositToGateway: (amount: string, chainConfig?: ChainConfig) => Promise<boolean>;
     transferToArc: (amount: string, sourceChainConfig: ChainConfig) => Promise<boolean>;
+    transferToBase: (amount: string, sourceChainConfig: ChainConfig) => Promise<boolean>;
     withdrawFromGateway: (amount: string) => Promise<boolean>;
 }
 
@@ -349,6 +351,122 @@ export function useGateway(network: 'mainnet' | 'testnet' = 'testnet'): UseGatew
         }
     }, [address, chainId, network, switchChainAsync, signTypedDataAsync, writeContractAsync, fetchBalances]);
 
+    // Transfer USDC from any chain to Base Sepolia via Gateway (for Yellow Network)
+    const transferToBase = useCallback(async (amount: string, sourceChainConfig: ChainConfig): Promise<boolean> => {
+        if (!address) {
+            setError('Wallet not connected');
+            return false;
+        }
+
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const sourceConfig = sourceChainConfig[network];
+            const destConfig = baseContracts[network];
+
+            if (!sourceConfig || !destConfig) {
+                throw new Error('Chain configuration not available');
+            }
+
+            const transferAmount = parseUnits(amount, 6);
+
+            // Build burn intent for Base destination
+            const burnIntent = {
+                maxBlockHeight: maxUint256,
+                maxFee: BigInt(2010000), // 2.01 USDC max fee
+                spec: {
+                    version: 1,
+                    sourceDomain: sourceChainConfig.domain,
+                    destinationDomain: baseContracts.domain,
+                    sourceContract: sourceConfig.GatewayWallet,
+                    destinationContract: destConfig.GatewayMinter,
+                    sourceToken: sourceConfig.USDCAddress,
+                    destinationToken: destConfig.USDCAddress,
+                    sourceDepositor: address,
+                    destinationRecipient: address,
+                    sourceSigner: address,
+                    destinationCaller: zeroAddress,
+                    value: transferAmount,
+                    salt: randomHex32(),
+                    hookData: '0x' as Hex,
+                },
+            };
+
+            // Format for EIP-712 signing
+            const messageForSigning = {
+                maxBlockHeight: burnIntent.maxBlockHeight.toString(),
+                maxFee: burnIntent.maxFee.toString(),
+                spec: {
+                    version: burnIntent.spec.version,
+                    sourceDomain: burnIntent.spec.sourceDomain,
+                    destinationDomain: burnIntent.spec.destinationDomain,
+                    sourceContract: addressToBytes32(burnIntent.spec.sourceContract),
+                    destinationContract: addressToBytes32(burnIntent.spec.destinationContract),
+                    sourceToken: addressToBytes32(burnIntent.spec.sourceToken),
+                    destinationToken: addressToBytes32(burnIntent.spec.destinationToken),
+                    sourceDepositor: addressToBytes32(burnIntent.spec.sourceDepositor as Hex),
+                    destinationRecipient: addressToBytes32(burnIntent.spec.destinationRecipient as Hex),
+                    sourceSigner: addressToBytes32(burnIntent.spec.sourceSigner as Hex),
+                    destinationCaller: addressToBytes32(burnIntent.spec.destinationCaller as Hex),
+                    value: burnIntent.spec.value.toString(),
+                    salt: burnIntent.spec.salt,
+                    hookData: burnIntent.spec.hookData,
+                },
+            };
+
+            // Sign the burn intent
+            const signature = await signTypedDataAsync({
+                types: eip712Types,
+                domain: eip712Domain,
+                primaryType: 'BurnIntent',
+                message: messageForSigning,
+            });
+
+            // Submit to Gateway API
+            const gatewayUrl = network === 'mainnet'
+                ? GATEWAY_CONFIG.MAINNET_URL
+                : GATEWAY_CONFIG.TESTNET_URL;
+
+            const response = await fetch(`${gatewayUrl}/transfer`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify([{ burnIntent: messageForSigning, signature }]),
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Gateway API error: ${errorText}`);
+            }
+
+            const { attestation, signature: apiSignature } = await response.json();
+
+            // Switch to Base for minting
+            if (chainId !== destConfig.ViemChain.id) {
+                await switchChainAsync({ chainId: destConfig.ViemChain.id });
+            }
+
+            // Mint on Base
+            await writeContractAsync({
+                address: destConfig.GatewayMinter,
+                abi: gatewayMinterAbi,
+                functionName: 'gatewayMint',
+                args: [attestation, apiSignature],
+            });
+
+            // Refresh balances
+            await fetchBalances();
+
+            return true;
+        } catch (err) {
+            console.error('Transfer to Base failed:', err);
+            setError(err instanceof Error ? err.message : 'Transfer failed');
+            return false;
+        } finally {
+            setIsLoading(false);
+        }
+    }, [address, chainId, network, switchChainAsync, signTypedDataAsync, writeContractAsync, fetchBalances]);
+
     // Withdraw from Gateway to wallet
     const withdrawFromGateway = useCallback(async (amount: string): Promise<boolean> => {
         // Implementation would involve closing the Gateway position
@@ -372,6 +490,7 @@ export function useGateway(network: 'mainnet' | 'testnet' = 'testnet'): UseGatew
         fetchBalances,
         depositToGateway,
         transferToArc,
+        transferToBase,
         withdrawFromGateway,
     };
 }

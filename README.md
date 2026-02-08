@@ -1,8 +1,8 @@
-# CrushETH
+# Ethereal
 
 **Onboarding Grandma to Web3 through hyper-casual gaming.**
 
-CrushETH is a Match-3 game that demonstrates how complex blockchain infrastructure can be abstracted away from the user. It leverages **Yellow Network** for speed, **Arc & Circle** for liquidity, and **ENS** for identity.
+Ethereal is a Match-3 game that demonstrates how complex blockchain infrastructure can be abstracted away from the user. It leverages **Yellow Network** for speed, **Arc & Circle** for liquidity, and **ENS** for identity.
 
 ## Hackathon Tracks & API Usage
 
@@ -19,19 +19,17 @@ CrushETH is a Match-3 game that demonstrates how complex blockchain infrastructu
 *   **Requirement**: "Demonstrate off-chain transaction logic"
     *   **Implementation**: Every purchase triggers a state update signed by the user's session key.
 *   **Requirement**: "Show on-chain settlement"
-    *   **Implementation**: The session is finalized by calling `GameEscrow.settleSession` on Arc L1 with the session signature. See `contracts/src/GameEscrow.sol:L77-84`.
+    *   **Implementation**: The session is finalized by calling `GameEscrow.settleSession` on **Base Sepolia** with the session signature. See `contracts/src/GameEscrow.sol`.
 
 ---
 
-### 2. Arc & Circle
-**Goal**: Treat multiple chains as one liquidity surface using Arc as a Hub.
+### 2. Base Sepolia (Settlement Layer)
+**Goal**: Use Base Sepolia as the primary settlement layer for Yellow Network.
 
-*   **Requirement**: "Apps that are not locked to a single chain"
-    *   **Implementation**: Users can fund their account from **Arbitrum, Base, or Sepolia** using the `GatewayDepositModal`.
-*   **Requirement**: "Treat multiple chains as one liquidity surface"
-    *   **Implementation**: All bridged funds are unified in the `GameEscrow` contract on Arc Testnet: `0x05c3b54afcc11cf2168dcf48e56b6b966407699b`.
+*   **Requirement**: "Show on-chain settlement"
+    *   **Implementation**: All Yellow sessions settle to `GameEscrow.sol` on Base Sepolia.
 *   **Requirement**: "Use Circle's Developer Tools"
-    *   **Implementation**: Uses Circle's **Cross-Chain Transfer Protocol (CCTP)** for the bridge. See `src/hooks/useGateway.ts:L237-350`.
+    *   **Implementation**: Uses Circle's **Cross-Chain Transfer Protocol (CCTP)** to bridge funds to Base Sepolia if needed.
 
 ---
 
@@ -66,8 +64,7 @@ graph TD
     end
 
     subgraph Economic Layer
-        GATEWAY[Circle Gateway]
-        ARC[Arc L1 Blockchain]
+        BASE[Base Sepolia]
         ESCROW[GameEscrow.sol]
         USDC[USDC Contract]
     end
@@ -89,14 +86,15 @@ graph TD
     Y_NODE -->|Syncs| Y_STATE
     Y_SDK -->|Sign Close (Settlement)| WAGMI
 
-    %% Arc Interactions
+    %% Base Interactions
     WAGMI -->|Settle Balances| ESCROW
-    ESCROW -.->|Contract| ARC
-    ARC -->|Holds| USDC
+    ESCROW -.->|Contract| BASE
+    BASE -->|Holds| USDC
 
     %% Gateway Flow
-    ARB & OP & BASE & SEP -->|Deposit USDC| GATEWAY
-    GATEWAY -->|Bridge/Mint| ARC
+    %% Gateway Flow
+    ARB & OP & SEP -->|Deposit USDC| GATEWAY
+    GATEWAY -->|Bridge/Mint| BASE
 ```
 
 ## Getting Started

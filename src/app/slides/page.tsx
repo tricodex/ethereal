@@ -20,7 +20,7 @@ const SLIDES = [
                 >
                     <div className="absolute inset-0 bg-blue-500 blur-3xl opacity-20 rounded-full" />
                     <h1 className="text-8xl font-black text-white relative z-10 drop-shadow-[0_0_15px_rgba(0,0,0,1)]">
-                        CRUSH<span className="text-[var(--neon-blue)]">ETH</span>
+                        ETHEREAL
                     </h1>
                 </motion.div>
                 <motion.h2 
@@ -132,7 +132,7 @@ const SLIDES = [
                     </div>
                     <div>
                         <h3 className="text-[#00f3ff] text-xl font-mono font-bold uppercase tracking-widest">The Economic OS</h3>
-                        <h2 className="text-5xl font-bold text-white">Arc & Circle</h2>
+                        <h2 className="text-5xl font-bold text-white">Base Sepolia & Circle</h2>
                     </div>
                 </div>
 
@@ -148,13 +148,13 @@ const SLIDES = [
                         <ExternalLink className="w-10 h-10 text-[#00f3ff]" />
                         <h4 className="text-xl font-bold text-white">Cross-Chain Payments</h4>
                         <p className="text-gray-400">
-                            Users on Base, Arbitrum, or Sepolia can deposit instantly to Arc Testnet using our <span className="font-mono text-sm bg-white/10 px-1 rounded">GatewayDepositModal</span>.
+                            Users on Arbitrum, Optimism, or Sepolia can deposit instantly to Base Sepolia using our <span className="font-mono text-sm bg-white/10 px-1 rounded">GatewayDepositModal</span>.
                         </p>
                     </div>
                     <div className="p-8 bg-[#00f3ff]/5 border border-[#00f3ff]/20 rounded-3xl space-y-4">
-                        <h4 className="text-xl font-bold text-white">Arc Testnet</h4>
+                        <h4 className="text-xl font-bold text-white">Base Sepolia</h4>
                         <p className="text-gray-400">
-                            Deployed <span className="font-mono text-sm bg-white/10 px-1 rounded">GameEscrow.sol</span> on Arc to leverage its purpose-built DeFi infrastructure.
+                            Deployed <span className="font-mono text-sm bg-white/10 px-1 rounded">GameEscrow.sol</span> on Base Sepolia to leverage its low-cost infrastructure.
                         </p>
                     </div>
                 </div>
@@ -307,7 +307,7 @@ export default function SlidesPage() {
             {/* Branding - Top Left */}
             <div className="absolute top-8 left-8 z-20">
                 <Link href="/" className="flex items-center gap-2 opacity-50 hover:opacity-100 transition-opacity">
-                    <div className="font-black text-white tracking-widest">CRUSH<span className="text-[var(--neon-blue)]">ETH</span></div>
+                    <div className="font-black text-white tracking-widest">ETHEREAL</div>
                 </Link>
             </div>
         </div>
