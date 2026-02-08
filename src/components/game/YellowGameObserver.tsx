@@ -20,24 +20,26 @@ export function YellowGameObserver() {
         // Only sync if:
         // 1. We have an active session
         // 2. Moves have increased (game state changed)
-        // 3. Score has changed meaningfully
         if (isSessionActive && sessionId && moves > lastMovesRef.current) {
 
-            // Calculate the score difference (reward/penalty for the move)
+            // Calculate the score difference
             const scoreDelta = score - lastScoreRef.current;
 
-            // For now, we just log the sync. In a full implementation,
-            // we might send micro-payments based on performance:
-            // - Positive delta: player earning rewards
-            // - Negative delta: player losing stake
+            // Trigger a state update on Yellow Network
+            // Even a 0-value payment increments the state nonce/version
+            // demonstrating a signed off-chain transaction.
+            // If scoreDelta is positive, we could theoretically *pay* the user, 
+            // but for this demo loops, we just checkpoint the state.
+            sendPayment(0n).catch(console.error);
+
             if (scoreDelta !== 0) {
-                addLog(`🎮 Move ${moves}: Score ${scoreDelta > 0 ? '+' : ''}${scoreDelta}`);
+                addLog(`🎮 Move ${moves}: Syncing State (Score ${scoreDelta})`);
             }
 
             lastMovesRef.current = moves;
             lastScoreRef.current = score;
         }
-    }, [moves, score, isSessionActive, sessionId, addLog]);
+    }, [moves, score, isSessionActive, sessionId, addLog, sendPayment]);
 
     // Reset refs on level change
     useEffect(() => {
