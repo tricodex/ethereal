@@ -7,7 +7,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 
 import { useSignMessage, useSendTransaction } from "wagmi";
-import { parseEther } from "viem";
+import { parseEther, encodeFunctionData } from "viem";
 import { useNitrolite } from "@/hooks/useNitrolite"; // Real SDK Hook
 
 export default function YellowMarketPage() {
@@ -39,21 +39,37 @@ export default function YellowMarketPage() {
   const handleSettle = async () => {
       try {
           setIsSettling(true);
-          // addLog("Initiating Settlement..."); 
           
-          // 1. Sign Close Intent
-          await signMessageAsync({ message: `Yellow Network: Close Channel ${sessionId || '0x...'}\nFinal Balance: 5000 Gold` });
+          if (!sessionId) return;
+
+          // 1. Sign Close Intent (simulating the channel close proof from Yellow)
+          // In prod, this signature comes from the Nitrolite SDK's closeChannel()
+          const signature = await signMessageAsync({ message: `Yellow Network: Close Channel ${sessionId}\nFinal Balance: 5000 Gold` });
           
-          // 2. Submit to Arc (0-value tx to simulate settlement call)
-          const hash = await sendTransactionAsync({
-              to: "0x0996c2e70E4Eb633A95258D2699Cb965368A3CB6", // GameEscrow
-              value: parseEther("0"),
-              data: "0x" // Empty data, just a ping
+          // 2. Submit to Arc GameEscrow
+          // Calling settleSession(bytes32 sessionId, uint256 finalBalance, bytes signature)
+          const sessionBytes32 = sessionId.padEnd(66, '0').slice(0, 66) as `0x${string}`; // Quick fix to fit bytes32
+          
+          await sendTransactionAsync({
+              to: process.env.NEXT_PUBLIC_GAME_ESCROW_ADDRESS as `0x${string}`, // Use ENV var
+              data: encodeFunctionData({
+                abi: [{
+                    name: 'settleSession',
+                    type: 'function',
+                    inputs: [
+                        { type: 'bytes32', name: 'sessionId' },
+                        { type: 'uint256', name: 'finalBalance' },
+                        { type: 'bytes', name: 'signature' }
+                    ],
+                    outputs: []
+                }],
+                functionName: 'settleSession',
+                args: [sessionBytes32, 5000n, signature]
+              })
           });
           
-          // We can disconnect manually here or just let page unmount handle it
       } catch (err) {
-          console.error(err);
+          console.error("Settlement Failed:", err);
       } finally {
           setIsSettling(false);
       }

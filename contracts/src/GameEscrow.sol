@@ -67,6 +67,22 @@ contract GameEscrow {
         emit WinningsClaimed(matchId, msg.sender, winnings);
     }
 
+    // Yellow Network Settlement Integration
+    // In a full production implementation, this would verify the signature 
+    // against the Yellow Node's public key (e.g. using EIP-712).
+    // For the Hackathon MVP, we record the settlement proof on-chain 
+    // to demonstrate the intended architecture of "Off-chain Game -> On-chain Settlement".
+    event SessionSettled(bytes32 indexed sessionId, address indexed user, uint256 finalBalance, bytes signature);
+
+    function settleSession(bytes32 sessionId, uint256 finalBalance, bytes calldata signature) external {
+        // In prod: verifySignature(sessionId, finalBalance, signature)
+        
+        // Update user balance (simulating the channel withdrawal back to escrow)
+        balances[msg.sender] += finalBalance;
+
+        emit SessionSettled(sessionId, msg.sender, finalBalance, signature);
+    }
+
     function getBalance(address user) external view returns (uint256) {
         return balances[user];
     }
