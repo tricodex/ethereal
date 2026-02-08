@@ -5,6 +5,7 @@ import { Providers } from "./providers";
 import { Header } from "@/components/layout/Header";
 import { DailyRewardModal } from "@/components/game/DailyRewardModal";
 import { YellowGameObserver } from "@/components/game/YellowGameObserver";
+import { GameLogViewer } from "@/components/game/GameLogViewer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,6 +38,7 @@ export default function RootLayout({
                 <Header />
                 <DailyRewardModal />
                 <YellowGameObserver />
+                <GameLogViewer />
                 {children}
             </div>
         </Providers>
